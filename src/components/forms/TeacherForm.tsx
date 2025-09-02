@@ -280,19 +280,18 @@ const TeacherForm = ({
 
       {/* Cloudinary Widget Modal */}
       {widgetOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50">
           <div className="relative bg-white p-6 rounded-lg max-w-md w-full">
             <button
               onClick={() => setWidgetOpen(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-[101]"
             >
               <X className="w-5 h-5" />
             </button>
             <h3 className="text-lg font-medium mb-4">Upload Image</h3>
 
-            {/* Simple Cloudinary Widget that opens automatically */}
             <CldUploadWidget
-              uploadPreset="school"
+              uploadPreset={`${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}`}
               onSuccess={(result, { widget }) => {
                 setImg(result.info);
                 widget.close();
@@ -303,20 +302,13 @@ const TeacherForm = ({
               }}
             >
               {({ open }) => {
-                // Use a timeout to ensure the widget is ready before opening
-                setTimeout(() => {
-                  open();
-                }, 100);
-
                 return (
                   <div className="text-center p-4">
-                    <p className="text-sm text-gray-600 mb-4">
-                      Cloudinary upload widget is loading...
-                    </p>
                     <Button
                       type="button"
-                      onClick={() => open()}
+                      onClick={() => open?.()}
                       className="bg-blue-500 text-white"
+                      disabled={!open} // Disable if open is not available
                     >
                       Open Upload Widget
                     </Button>
@@ -329,7 +321,7 @@ const TeacherForm = ({
       )}
 
       {state.error && (
-        <span className="text-red-500">Something went wrong!</span>
+        <span className="text-xs text-red-500">Something went wrong!</span>
       )}
       <Button className="bg-blue-400 text-white rounded-md">
         {type === "create" ? "Create" : "Update"}

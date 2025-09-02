@@ -161,6 +161,7 @@ export const deleteClass = async (
 };
 
 // Create Teacher
+// Create Teacher
 export const createTeacher = async (
   currentState: CurrentState,
   data: TeacherSchema
@@ -169,6 +170,7 @@ export const createTeacher = async (
     const user = await clerkClient.users.createUser({
       username: data.username,
       password: data.password,
+      emailAddress: [data.email], // Add this line - Clerk expects an array
       firstName: data.name,
       lastName: data.surname,
       publicMetadata: { role: "teacher" },
@@ -176,11 +178,11 @@ export const createTeacher = async (
 
     await prisma.teacher.create({
       data: {
-        id: user.id,
+        clerkId: user.id,
         username: data.username,
         name: data.name,
         surname: data.surname,
-        email: data.email || null,
+        email: data.email || null, // Make sure this matches
         phone: data.phone || null,
         address: data.address,
         img: data.img || null,
@@ -189,7 +191,7 @@ export const createTeacher = async (
         birthday: data.birthday,
         subjects: {
           connect: data.subjects?.map((subjectId: string) => ({
-            id: parseInt(subjectId),
+              id: subjectId,
           })),
         },
       },
@@ -202,7 +204,6 @@ export const createTeacher = async (
     return { success: false, error: true };
   }
 };
-
 // Update Teacher
 export const updateTeacher = async (
   currentState: CurrentState,
@@ -215,6 +216,7 @@ export const updateTeacher = async (
     const user = await clerkClient.users.updateUser(data.id, {
       username: data.username,
       ...(data.password !== "" && { password: data.password }),
+      emailAddress: [data.email],
       firstName: data.name,
       lastName: data.surname,
     });

@@ -230,3 +230,10 @@ iframe[title="Cloudinary Upload Widget"] {
 .cloudinary-widget {
   z-index: 10000 !important;
 }
+:global(.cloudinary-react-widget) {
+  z-index: 9999 !important;
+}
+
+:global(.cloudinary-react-widget-overlay) {
+  z-index: 9998 !important;
+}

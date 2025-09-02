@@ -14,6 +14,7 @@ model Admin {
 
 model Student {
   id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  clerkId     String       @unique
   username    String       @unique
   name        String
   surname     String
@@ -37,6 +38,7 @@ model Student {
 
 model Teacher {
   id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  clerkId   String           @unique
   username  String           @unique
   name      String
   surname   String
@@ -56,6 +58,7 @@ model Teacher {
 
 model Parent {
   id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  clerkId   String    @unique
   username  String    @unique
   name      String
   surname   String
