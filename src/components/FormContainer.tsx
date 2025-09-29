@@ -61,16 +61,23 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         const studentClasses = await prisma.class.findMany({
           include: { _count: { select: { students: true } } },
         });
-        relatedData = { classes: studentClasses, grades: studentGrades };
+        const studentParents = await prisma.parent.findMany({
+          select: { id: true, name: true, surname: true },
+        });
+        relatedData = {
+          classes: studentClasses,
+          grades: studentGrades,
+          parents: studentParents,
+        };
         break;
       case "exam": {
-      const lessons = await prisma.lesson.findMany({
-        where: role === "teacher" ? { teacherId: currentUserId! } : undefined,
-        select: { id: true, name: true },
-      });
-      relatedData = { lessons };
-      break;
-    }
+        const lessons = await prisma.lesson.findMany({
+          where: role === "teacher" ? { teacherId: currentUserId! } : undefined,
+          select: { id: true, name: true },
+        });
+        relatedData = { lessons };
+        break;
+      }
       case "assignment":
         const assignmentLessons = await prisma.lesson.findMany({
           where: {
@@ -102,7 +109,11 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         const lessonTeachers = await prisma.teacher.findMany({
           select: { id: true, name: true, surname: true },
         });
-        relatedData = { subjects: lessonSubjects, classes: lessonClasses, teachers: lessonTeachers };
+        relatedData = {
+          subjects: lessonSubjects,
+          classes: lessonClasses,
+          teachers: lessonTeachers,
+        };
         break;
       case "attendance":
         // Fetch lessons and students for the attendance form
@@ -115,7 +126,10 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         const attendanceStudents = await prisma.student.findMany({
           select: { id: true, name: true, surname: true },
         });
-        relatedData = { lessons: attendanceLessons, students: attendanceStudents };
+        relatedData = {
+          lessons: attendanceLessons,
+          students: attendanceStudents,
+        };
         break;
 
       case "event":
@@ -168,7 +182,13 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
 
   return (
     <div className="">
-      <FormModal table={table} type={type} data={data} id={id} relatedData={relatedData} />
+      <FormModal
+        table={table}
+        type={type}
+        data={data}
+        id={id}
+        relatedData={relatedData}
+      />
     </div>
   );
 };

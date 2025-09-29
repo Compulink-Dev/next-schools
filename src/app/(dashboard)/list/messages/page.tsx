@@ -8,6 +8,7 @@ import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Message, Prisma } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
+import { DataTable } from "@/components/DataTable";
 
 // Define a type for the Message data
 type MessageList = Message;
@@ -102,7 +103,10 @@ const MessageListPage = async ({
             query.senderId = { contains: value as string, mode: "insensitive" };
             break;
           case "receiverId":
-            query.receiverId = { contains: value as string, mode: "insensitive" };
+            query.receiverId = {
+              contains: value as string,
+              mode: "insensitive",
+            };
             break;
           // Add more cases for other filterable fields
           default:
@@ -146,9 +150,12 @@ const MessageListPage = async ({
         </div>
       </div>
       {/* LIST */}
-      <Table columns={columns} renderRow={renderRow} data={data} />
-      {/* PAGINATION */}
-      <Pagination page={p} count={count} />
+      <DataTable
+        columns={columns}
+        data={data}
+        searchKey="name"
+        searchPlaceholder="Search message..."
+      />
     </div>
   );
 };

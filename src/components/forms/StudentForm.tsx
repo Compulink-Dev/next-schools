@@ -5,22 +5,22 @@ import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import {
-  studentSchema,
-  StudentSchema,
-  teacherSchema,
-  TeacherSchema,
-} from "@/lib/formValidationSchemas";
+import { studentSchema, StudentSchema } from "@/lib/formValidationSchemas";
 import { useFormState } from "react-dom";
-import {
-  createStudent,
-  createTeacher,
-  updateStudent,
-  updateTeacher,
-} from "@/lib/actions";
+import { createStudent, updateStudent } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { CldUploadWidget } from "next-cloudinary";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Controller } from "react-hook-form";
 
 const StudentForm = ({
   type,
@@ -36,9 +36,26 @@ const StudentForm = ({
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<StudentSchema>({
     resolver: zodResolver(studentSchema),
+    defaultValues: {
+      username: data?.username || "",
+      email: data?.email || "",
+      password: data?.password || "",
+      name: data?.name || "",
+      surname: data?.surname || "",
+      phone: data?.phone || "",
+      address: data?.address || "",
+      bloodType: data?.bloodType || "",
+      birthday: data?.birthday ? data.birthday.toISOString().split("T")[0] : "",
+      parentId: data?.parentId || "",
+      id: data?.id || "",
+      sex: data?.sex || "MALE",
+      gradeId: data?.gradeId || "", // Keep as string
+      classId: data?.classId || "", // Keep as string
+    },
   });
 
   const [img, setImg] = useState<any>();
@@ -52,7 +69,6 @@ const StudentForm = ({
   );
 
   const onSubmit = handleSubmit((data) => {
-    console.log("hello");
     console.log(data);
     formAction({ ...data, img: img?.secure_url });
   });
@@ -67,7 +83,12 @@ const StudentForm = ({
     }
   }, [state, router, type, setOpen]);
 
-  const { grades, classes } = relatedData;
+  console.log("Student Related Data : ", relatedData);
+
+  const { grades, classes, parents = [] } = relatedData || {};
+
+  console.log("Student Related Data : ", relatedData);
+  console.log("Parents array:", parents);
 
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>
@@ -81,14 +102,12 @@ const StudentForm = ({
         <InputField
           label="Username"
           name="username"
-          defaultValue={data?.username}
           register={register}
           error={errors?.username}
         />
         <InputField
           label="Email"
           name="email"
-          defaultValue={data?.email}
           register={register}
           error={errors?.email}
         />
@@ -96,7 +115,6 @@ const StudentForm = ({
           label="Password"
           name="password"
           type="password"
-          defaultValue={data?.password}
           register={register}
           error={errors?.password}
         />
@@ -127,120 +145,193 @@ const StudentForm = ({
         <InputField
           label="First Name"
           name="name"
-          defaultValue={data?.name}
           register={register}
           error={errors.name}
         />
         <InputField
           label="Last Name"
           name="surname"
-          defaultValue={data?.surname}
           register={register}
           error={errors.surname}
         />
         <InputField
           label="Phone"
           name="phone"
-          defaultValue={data?.phone}
           register={register}
           error={errors.phone}
         />
         <InputField
           label="Address"
           name="address"
-          defaultValue={data?.address}
           register={register}
           error={errors.address}
         />
         <InputField
           label="Blood Type"
           name="bloodType"
-          defaultValue={data?.bloodType}
           register={register}
           error={errors.bloodType}
         />
         <InputField
           label="Birthday"
           name="birthday"
-          defaultValue={data?.birthday.toISOString().split("T")[0]}
           register={register}
           error={errors.birthday}
           type="date"
         />
-        <InputField
-          label="Parent Id"
-          name="parentId"
-          defaultValue={data?.parentId}
-          register={register}
-          error={errors.parentId}
-        />
+        {/* Parent Select */}
+        <div className="flex flex-col gap-2 w-full md:w-1/4">
+          <label className="text-xs text-gray-500">Parent</label>
+          <Controller
+            control={control}
+            name="parentId"
+            render={({ field }) => (
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                defaultValue={data?.parentId}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select parent" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Parents</SelectLabel>
+                    {parents.map(
+                      (parent: {
+                        id: string;
+                        name: string;
+                        surname: string;
+                      }) => (
+                        <SelectItem key={parent.id} value={parent.id}>
+                          {parent.name} {parent.surname}
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {errors.parentId?.message && (
+            <p className="text-xs text-red-400">
+              {errors.parentId.message.toString()}
+            </p>
+          )}
+        </div>
         {data && (
           <InputField
             label="Id"
             name="id"
-            defaultValue={data?.id}
             register={register}
             error={errors?.id}
             hidden
           />
         )}
+        {/* Sex Select */}
         <div className="flex flex-col gap-2 w-full md:w-1/4">
           <label className="text-xs text-gray-500">Sex</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("sex")}
-            defaultValue={data?.sex}
-          >
-            <option value="MALE">Male</option>
-            <option value="FEMALE">Female</option>
-          </select>
+          <Controller
+            control={control}
+            name="sex"
+            render={({ field }) => (
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                defaultValue={data?.sex}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select sex" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Sex</SelectLabel>
+                    <SelectItem value="MALE">Male</SelectItem>
+                    <SelectItem value="FEMALE">Female</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            )}
+          />
           {errors.sex?.message && (
             <p className="text-xs text-red-400">
               {errors.sex.message.toString()}
             </p>
           )}
         </div>
+        {/* Grade Select */}
         <div className="flex flex-col gap-2 w-full md:w-1/4">
           <label className="text-xs text-gray-500">Grade</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("gradeId")}
-            defaultValue={data?.gradeId}
-          >
-            {grades.map((grade: { id: number; level: number }) => (
-              <option value={grade.id} key={grade.id}>
-                {grade.level}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="gradeId"
+            render={({ field }) => (
+              <Select
+                value={field.value?.toString()} // Convert to string
+                onValueChange={field.onChange}
+                defaultValue={data?.gradeId?.toString()} // Convert to string
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select grade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Grades</SelectLabel>
+                    {grades.map((grade: { id: string; level: number }) => (
+                      <SelectItem key={grade.id} value={grade.id.toString()}>
+                        Grade {grade.level}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            )}
+          />
           {errors.gradeId?.message && (
             <p className="text-xs text-red-400">
               {errors.gradeId.message.toString()}
             </p>
           )}
         </div>
+        {/* Class Select */}
         <div className="flex flex-col gap-2 w-full md:w-1/4">
           <label className="text-xs text-gray-500">Class</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("classId")}
-            defaultValue={data?.classId}
-          >
-            {classes.map(
-              (classItem: {
-                id: number;
-                name: string;
-                capacity: number;
-                _count: { students: number };
-              }) => (
-                <option value={classItem.id} key={classItem.id}>
-                  ({classItem.name} -{" "}
-                  {classItem._count.students + "/" + classItem.capacity}{" "}
-                  Capacity)
-                </option>
-              )
+          <Controller
+            control={control}
+            name="classId"
+            render={({ field }) => (
+              <Select
+                value={field.value?.toString()} // Convert to string
+                onValueChange={field.onChange}
+                defaultValue={data?.classId?.toString()} // Convert to string
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select class" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Classes</SelectLabel>
+                    {classes.map(
+                      (classItem: {
+                        id: string;
+                        name: string;
+                        capacity: number;
+                        _count: { students: number };
+                      }) => (
+                        <SelectItem
+                          key={classItem.id}
+                          value={classItem.id.toString()}
+                        >
+                          {classItem.name} - {classItem._count.students}/
+                          {classItem.capacity}
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             )}
-          </select>
+          />
           {errors.classId?.message && (
             <p className="text-xs text-red-400">
               {errors.classId.message.toString()}

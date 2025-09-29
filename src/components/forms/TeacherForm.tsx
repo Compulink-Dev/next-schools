@@ -24,6 +24,13 @@ import { Button } from "../ui/button";
 import { toast } from "sonner";
 import { X } from "lucide-react";
 
+// Define the form state type
+interface FormState {
+  success: boolean;
+  error: boolean;
+  errorMessage?: string;
+}
+
 const TeacherForm = ({
   type,
   data,
@@ -55,34 +62,50 @@ const TeacherForm = ({
   );
   const [widgetOpen, setWidgetOpen] = useState(false);
 
-  const [state, formAction] = useFormState(
-    type === "create" ? createTeacher : updateTeacher,
-    {
-      success: false,
-      error: false,
-    }
-  );
+  // Use the FormState type with useFormState
+  const [state, formAction] = useFormState<
+    FormState,
+    TeacherSchema & { img?: string }
+  >(type === "create" ? createTeacher : updateTeacher, {
+    success: false,
+    error: false,
+  });
 
-  const onSubmit = handleSubmit((data) => {
-    console.log(data);
-    formAction({ ...data, img: img?.secure_url || img });
+  const onSubmit = handleSubmit((formData) => {
+    console.log(formData);
+
+    // Prepare the data to send to the server action
+    const actionData = {
+      ...formData,
+      img: img?.secure_url || img || data?.img,
+    };
+
+    formAction(actionData);
   });
 
   const router = useRouter();
 
   useEffect(() => {
-    try {
-      if (state.success) {
-        toast(`Teacher has been ${type === "create" ? "created" : "updated"}!`);
-        setOpen(false);
-        router.refresh();
+    if (state.error) {
+      // Check if it's a phone uniqueness error
+      if (
+        state.errorMessage?.includes("phone") ||
+        state.errorMessage?.includes("unique")
+      ) {
+        toast.error(
+          "Phone number already exists. Please use a different phone number."
+        );
+      } else {
+        toast.error("Something went wrong!");
       }
-    } catch (error) {
-      toast(`Error in creating teacher : ${error}`);
+    }
+
+    if (state.success) {
+      toast(`Teacher has been ${type === "create" ? "created" : "updated"}!`);
+      setOpen(false);
+      router.refresh();
     }
   }, [state, router, type, setOpen]);
-
-  const { subjects } = relatedData;
 
   const handleSubjectChange = (value: string) => {
     const newSelectedSubjects = selectedSubjects.includes(value)
@@ -92,6 +115,9 @@ const TeacherForm = ({
     setSelectedSubjects(newSelectedSubjects);
     setValue("subjects", newSelectedSubjects);
   };
+
+  // Get subjects from relatedData or provide empty array as fallback
+  const subjects = relatedData?.subjects || [];
 
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>
@@ -308,7 +334,7 @@ const TeacherForm = ({
                       type="button"
                       onClick={() => open?.()}
                       className="bg-blue-500 text-white"
-                      disabled={!open} // Disable if open is not available
+                      disabled={!open}
                     >
                       Open Upload Widget
                     </Button>
@@ -323,7 +349,7 @@ const TeacherForm = ({
       {state.error && (
         <span className="text-xs text-red-500">Something went wrong!</span>
       )}
-      <Button className="bg-blue-400 text-white rounded-md">
+      <Button type="submit" className="bg-blue-400 text-white rounded-md">
         {type === "create" ? "Create" : "Update"}
       </Button>
     </form>

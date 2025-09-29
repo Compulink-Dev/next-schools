@@ -8,6 +8,7 @@ import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Class, Event, Prisma } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
+import { DataTable } from "@/components/DataTable";
 
 // Define a type for the Event data with related information
 type EventList = Event & {
@@ -177,9 +178,14 @@ const EventListPage = async ({
         </div>
       </div>
       {/* LIST */}
-      <Table columns={columns} renderRow={renderRow} data={data} />
+      <DataTable
+        columns={columns}
+        data={data}
+        searchKey="name"
+        searchPlaceholder="Search event..."
+      />
       {/* PAGINATION */}
-      <Pagination page={p} count={count} />
+      {/* <Pagination page={p} count={count} /> */}
     </div>
   );
 };

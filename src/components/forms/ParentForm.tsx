@@ -1,10 +1,11 @@
+// ParentForm.tsx - with relatedData support
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
 import { Dispatch, SetStateAction, useEffect } from "react";
-import { parentSchema, ParentSchema } from "@/lib/formValidationSchemas"; // Assuming you have a parentSchema
+import { parentSchema, ParentSchema } from "@/lib/formValidationSchemas";
 import { useFormState } from "react-dom";
 import { createParent, updateParent } from "@/lib/actions";
 import { useRouter } from "next/navigation";
@@ -14,10 +15,12 @@ const ParentForm = ({
   type,
   data,
   setOpen,
+  relatedData, // Add relatedData prop
 }: {
   type: "create" | "update";
   data?: any;
   setOpen: Dispatch<SetStateAction<boolean>>;
+  relatedData?: any; // Make it optional
 }) => {
   const {
     register,
@@ -48,7 +51,10 @@ const ParentForm = ({
       router.refresh();
     }
   }, [state, router, type, setOpen]);
-  console.log("pdata", data);
+
+  console.log("Parent data:", data);
+  console.log("Parent relatedData:", relatedData); // Log relatedData if needed
+
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>
       <h1 className="text-xl font-semibold">
@@ -127,7 +133,10 @@ const ParentForm = ({
       {state.error && (
         <span className="text-red-500">Something went wrong!</span>
       )}
-      {/* Removed the Button */}
+      {/* Add submit button */}
+      <button type="submit" className="bg-blue-400 text-white p-2 rounded-md">
+        {type === "create" ? "Create" : "Update"}
+      </button>
     </form>
   );
 };

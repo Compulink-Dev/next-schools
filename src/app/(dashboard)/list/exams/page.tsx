@@ -7,6 +7,7 @@ import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Class, Exam, Prisma, Subject, Teacher } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
+import { DataTable } from "@/components/DataTable";
 
 type ExamList = Exam & {
   lesson: {
@@ -185,9 +186,14 @@ const ExamListPage = async ({
         </div>
       </div>
       {/* LIST */}
-      <Table columns={columns} renderRow={renderRow} data={data} />
+      <DataTable
+        columns={columns}
+        data={data}
+        searchKey="name"
+        searchPlaceholder="Search exam..."
+      />
       {/* PAGINATION */}
-      <Pagination page={p} count={count} />
+      {/* <Pagination page={p} count={count} /> */}
     </div>
   );
 };

@@ -3,22 +3,22 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
-import {
-  classSchema,
-  ClassSchema,
-  subjectSchema,
-  SubjectSchema,
-} from "@/lib/formValidationSchemas";
-import {
-  createClass,
-  createSubject,
-  updateClass,
-  updateSubject,
-} from "@/lib/actions";
+import { classSchema, ClassSchema } from "@/lib/formValidationSchemas";
+import { createClass, updateClass } from "@/lib/actions";
 import { useFormState } from "react-dom";
 import { Dispatch, SetStateAction, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Controller } from "react-hook-form";
 
 const ClassForm = ({
   type,
@@ -34,12 +34,18 @@ const ClassForm = ({
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<ClassSchema>({
     resolver: zodResolver(classSchema),
+    defaultValues: {
+      name: data?.name || "",
+      capacity: data?.capacity ? Number(data.capacity) : 0, // Ensure number
+      supervisorId: data?.supervisorId || "",
+      gradeId: data?.gradeId || "",
+      id: data?.id || "",
+    },
   });
-
-  // AFTER REACT 19 IT'LL BE USEACTIONSTATE
 
   const [state, formAction] = useFormState(
     type === "create" ? createClass : updateClass,
@@ -49,16 +55,16 @@ const ClassForm = ({
     }
   );
 
-  const onSubmit = handleSubmit((data) => {
-    console.log(data);
-    formAction(data);
+  const onSubmit = handleSubmit((formData) => {
+    console.log("Form data:", formData);
+    formAction(formData);
   });
 
   const router = useRouter();
 
   useEffect(() => {
     if (state.success) {
-      toast(`Subject has been ${type === "create" ? "created" : "updated"}!`);
+      toast(`Class has been ${type === "create" ? "created" : "updated"}!`);
       setOpen(false);
       router.refresh();
     }
@@ -76,69 +82,95 @@ const ClassForm = ({
         <InputField
           label="Class name"
           name="name"
-          defaultValue={data?.name}
           register={register}
           error={errors?.name}
         />
+
         <InputField
           label="Capacity"
           name="capacity"
-          defaultValue={data?.capacity}
+          type="number"
           register={register}
           error={errors?.capacity}
         />
+
         {data && (
           <InputField
             label="Id"
             name="id"
-            defaultValue={data?.id}
             register={register}
             error={errors?.id}
             hidden
           />
         )}
+
         <div className="flex flex-col gap-2 w-full md:w-1/4">
           <label className="text-xs text-gray-500">Supervisor</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("supervisorId")}
-            defaultValue={data?.teachers}
-          >
-            {teachers.map(
-              (teacher: { id: string; name: string; surname: string }) => (
-                <option
-                  value={teacher.id}
-                  key={teacher.id}
-                  selected={data && teacher.id === data.supervisorId}
-                >
-                  {teacher.name + " " + teacher.surname}
-                </option>
-              )
+          <Controller
+            control={control}
+            name="supervisorId"
+            render={({ field }) => (
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                defaultValue={data?.supervisorId}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a supervisor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Teachers</SelectLabel>
+                    {teachers.map(
+                      (teacher: {
+                        id: string;
+                        name: string;
+                        surname: string;
+                      }) => (
+                        <SelectItem key={teacher.id} value={teacher.id}>
+                          {teacher.name} {teacher.surname}
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             )}
-          </select>
+          />
           {errors.supervisorId?.message && (
             <p className="text-xs text-red-400">
               {errors.supervisorId.message.toString()}
             </p>
           )}
         </div>
+
         <div className="flex flex-col gap-2 w-full md:w-1/4">
           <label className="text-xs text-gray-500">Grade</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("gradeId")}
-            defaultValue={data?.gradeId}
-          >
-            {grades.map((grade: { id: number; level: number }) => (
-              <option
-                value={grade.id}
-                key={grade.id}
-                selected={data && grade.id === data.gradeId}
+          <Controller
+            control={control}
+            name="gradeId"
+            render={({ field }) => (
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                defaultValue={data?.gradeId}
               >
-                {grade.level}
-              </option>
-            ))}
-          </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a grade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Grades</SelectLabel>
+                    {grades.map((grade: { id: string; level: number }) => (
+                      <SelectItem key={grade.id} value={grade.id}>
+                        Grade {grade.level}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            )}
+          />
           {errors.gradeId?.message && (
             <p className="text-xs text-red-400">
               {errors.gradeId.message.toString()}
@@ -146,9 +178,11 @@ const ClassForm = ({
           )}
         </div>
       </div>
+
       {state.error && (
         <span className="text-red-500">Something went wrong!</span>
       )}
+
       <button className="bg-blue-400 text-white p-2 rounded-md">
         {type === "create" ? "Create" : "Update"}
       </button>

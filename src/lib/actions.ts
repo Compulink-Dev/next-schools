@@ -24,20 +24,27 @@ import { Day } from "@prisma/client"; // Import the Day enum
 
 type CurrentState = { success: boolean; error: boolean };
 
-// Create Subject
+// Create Subject - FIXED for MongoDB
 export const createSubject = async (data: SubjectSchema) => {
   try {
     console.log("📌 Creating subject with data:", data);
-
-    await prisma.subject.create({
+    
+    // First create the subject
+    const subject = await prisma.subject.create({
       data: {
         name: data.name,
-        teachers: {
-  connect: data.teachers.map((id) => ({ id: id.toString() })),
-},
-
       },
     });
+
+    // Then create the teacher-subject relationships
+    if (data.teachers && data.teachers.length > 0) {
+      await prisma.teacherSubject.createMany({
+        data: data.teachers.map(teacherId => ({
+          teacherId, // Keep as string (ObjectId)
+          subjectId: subject.id, // Keep as string (ObjectId)
+        })),
+      });
+    }
 
     revalidatePath("/list/subjects");
     return { success: true, error: false };
@@ -47,20 +54,36 @@ export const createSubject = async (data: SubjectSchema) => {
   }
 };
 
-// Update Subject
+// Update Subject - FIXED for MongoDB
 export const updateSubject = async (data: SubjectSchema) => {
   console.log("🛠️ Backend: updateSubject called with:", data);
 
   try {
+    // First update the subject name
     await prisma.subject.update({
       where: { id: data.id },
       data: {
         name: data.name,
-        teachers: {
-          set: data.teachers.map((id) => ({ id })),
-        },
       },
     });
+
+    // Then update the teacher relationships
+    if (data.teachers) {
+      // First, remove all existing teacher relationships for this subject
+      await prisma.teacherSubject.deleteMany({
+        where: { subjectId: data.id },
+      });
+
+      // Then add the new relationships
+      if (data.teachers.length > 0) {
+        await prisma.teacherSubject.createMany({
+          data: data.teachers.map(teacherId => ({
+            teacherId, // Keep as string (ObjectId)
+            subjectId: data.id, // Keep as string (ObjectId)
+          })),
+        });
+      }
+    }
 
     console.log("✅ Backend: Subject updated successfully");
     return { success: true, error: false };
@@ -70,16 +93,11 @@ export const updateSubject = async (data: SubjectSchema) => {
   }
 };
 
+// Delete Subject - FIXED for MongoDB
+export const deleteSubject = async (data: { id: string }) => {
+  const id = data.id;
 
-// Delete Subject
-// Fix this function to accept plain object
-export const deleteSubject = async (
-  _prevState: any,
-  formData: FormData
-): Promise<{ success: boolean; error: boolean }> => {
-  const id = formData.get("id");
-
-  if (!id || isNaN(Number(id))) {
+  if (!id) {
     console.warn("⚠️ Invalid subject ID:", id);
     return { success: false, error: true };
   }
@@ -88,7 +106,7 @@ export const deleteSubject = async (
     console.log("🗑️ Deleting subject with ID:", id);
 
     await prisma.subject.delete({
-      where: { id: Number(id) },
+      where: { id: id }, // Use string ID directly
     });
 
     revalidatePath("/list/subjects");
@@ -100,17 +118,22 @@ export const deleteSubject = async (
 };
 
 
-// Create Class
+// In lib/actions.ts
 export const createClass = async (
   _currentState: CurrentState,
   data: ClassSchema
 ) => {
   try {
     await prisma.class.create({
-      data,
+      data: {
+        name: data.name,
+        capacity: data.capacity,
+        supervisorId: data.supervisorId || null, // Keep as string
+        gradeId: data.gradeId, // Keep as string
+      },
     });
 
-    //revalidatePath("/list/class");
+    revalidatePath("/list/classes");
     return { success: true, error: false };
   } catch (err) {
     console.error("Error creating class:", err);
@@ -118,7 +141,6 @@ export const createClass = async (
   }
 };
 
-// Update Class
 export const updateClass = async (
   _currentState: CurrentState,
   data: ClassSchema
@@ -126,12 +148,17 @@ export const updateClass = async (
   try {
     await prisma.class.update({
       where: {
-        id: data.id,
+        id: data.id, // Use string ID directly
       },
-      data,
+      data: {
+        name: data.name,
+        capacity: data.capacity,
+        supervisorId: data.supervisorId || null, // Keep as string
+        gradeId: data.gradeId, // Keep as string
+      },
     });
 
-    //revalidatePath("/list/class");
+    revalidatePath("/list/classes");
     return { success: true, error: false };
   } catch (err) {
     console.error("Error updating class:", err);
@@ -161,7 +188,7 @@ export const deleteClass = async (
 };
 
 // Create Teacher
-// Create Teacher
+// lib/actions.ts
 export const createTeacher = async (
   currentState: CurrentState,
   data: TeacherSchema
@@ -170,7 +197,7 @@ export const createTeacher = async (
     const user = await clerkClient.users.createUser({
       username: data.username,
       password: data.password,
-      emailAddress: [data.email], // Add this line - Clerk expects an array
+      emailAddress: [data.email],
       firstName: data.name,
       lastName: data.surname,
       publicMetadata: { role: "teacher" },
@@ -182,7 +209,7 @@ export const createTeacher = async (
         username: data.username,
         name: data.name,
         surname: data.surname,
-        email: data.email || null, // Make sure this matches
+        email: data.email || null,
         phone: data.phone || null,
         address: data.address,
         img: data.img || null,
@@ -190,20 +217,52 @@ export const createTeacher = async (
         sex: data.sex,
         birthday: data.birthday,
         subjects: {
-          connect: data.subjects?.map((subjectId: string) => ({
-              id: subjectId,
-          })),
-        },
+              create: data.subjects?.map((subjectId: string) => ({
+                subject: { connect: { id: subjectId } },
+              })) || [],
+            },
+
       },
     });
 
     revalidatePath("/list/teachers");
-    return { success: true, error: false };
-  } catch (err) {
+    return { success: true, error: false, errorMessage: null };
+  } catch (err: any) {
     console.error("Error creating teacher:", err);
-    return { success: false, error: true };
+    
+    // Handle specific Prisma errors
+    if (err.code === 'P2002') {
+      if (err.meta?.target?.includes('phone')) {
+        return { 
+          success: false, 
+          error: true, 
+          errorMessage: 'Phone number already exists. Please use a different phone number.' 
+        };
+      }
+      if (err.meta?.target?.includes('email')) {
+        return { 
+          success: false, 
+          error: true, 
+          errorMessage: 'Email already exists. Please use a different email.' 
+        };
+      }
+      if (err.meta?.target?.includes('username')) {
+        return { 
+          success: false, 
+          error: true, 
+          errorMessage: 'Username already exists. Please use a different username.' 
+        };
+      }
+    }
+    
+    return { 
+      success: false, 
+      error: true, 
+      errorMessage: 'An unexpected error occurred. Please try again.' 
+    };
   }
 };
+
 // Update Teacher
 export const updateTeacher = async (
   currentState: CurrentState,
@@ -220,6 +279,19 @@ export const updateTeacher = async (
       firstName: data.name,
       lastName: data.surname,
     });
+
+       // First, get the current teacher to find existing subject connections
+    const currentTeacher = await prisma.teacher.findUnique({
+      where: { clerkId: data.id },
+      include: { subjects: true },
+    });
+
+    // Get current subject IDs
+    const currentSubjectIds = currentTeacher?.subjects.map(sub => sub.subjectId) || [];
+
+    // Determine which subjects to connect and disconnect
+    const subjectsToConnect = data.subjects?.filter(id => !currentSubjectIds.includes(id)) || [];
+    const subjectsToDisconnect = currentSubjectIds.filter(id => !data.subjects?.includes(id)) || [];
 
     await prisma.teacher.update({
       where: {
@@ -238,8 +310,13 @@ export const updateTeacher = async (
         sex: data.sex,
         birthday: data.birthday,
         subjects: {
-          set: data.subjects?.map((subjectId: string) => ({
-            id: parseInt(subjectId),
+          // Delete disconnected subjects
+          deleteMany: subjectsToDisconnect.map(subjectId => ({
+            subjectId: subjectId,
+          })),
+          // Create new connections
+          create: subjectsToConnect.map(subjectId => ({
+            subject: { connect: { id: subjectId } },
           })),
         },
       },
@@ -296,12 +373,13 @@ export const createStudent = async (
       password: data.password,
       firstName: data.name,
       lastName: data.surname,
+      emailAddress: [data.email], // Change this line
       publicMetadata: { role: "student" },
     });
 
     await prisma.student.create({
       data: {
-        id: user.id,
+        clerkId: user.id, // Add this line - use clerkId field
         username: data.username,
         name: data.name,
         surname: data.surname,
@@ -340,11 +418,12 @@ export const updateStudent = async (
       ...(data.password !== "" && { password: data.password }),
       firstName: data.name,
       lastName: data.surname,
+      emailAddress: [data.email], // Add this line
     });
 
     await prisma.student.update({
       where: {
-        id: data.id,
+        clerkId: data.id, // Change this to use clerkId instead of id
       },
       data: {
         ...(data.password !== "" && { password: data.password }),
@@ -982,13 +1061,14 @@ export const createParent = async (
       password: data.password,
       firstName: data.name,
       lastName: data.surname,
+      emailAddress: [data.email],
       publicMetadata: { role: "parent" },
     });
 
     // 2. Create the parent record in your database
     await prisma.parent.create({
       data: {
-        id: user.id, // Use the Clerk user ID as the Parent ID
+        clerkId: user.id,
         username: data.username,
         name: data.name,
         surname: data.surname,
@@ -1022,12 +1102,13 @@ export const updateParent = async (
       ...(data.password !== "" && { password: data.password }), // Update password if provided
       firstName: data.name,
       lastName: data.surname,
+      emailAddress: [data.email],
     });
 
     // 2. Update the parent record in the database
     await prisma.parent.update({
       where: {
-        id: data.id,
+        clerkId: data.id, 
       },
       data: {
         username: data.username,

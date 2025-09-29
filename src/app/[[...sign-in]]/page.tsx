@@ -26,7 +26,7 @@ const LoginPage = () => {
       <SignIn.Root>
         <SignIn.Step
           name="start"
-          className="bg-white p-12 rounded-md shadow-2xl flex flex-col gap-2"
+          className="bg-white p-12 rounded-md shadow-2xl flex flex-col gap-2 w-1/3 "
         >
           <h1 className="text-xl font-bold flex items-center gap-2">
             <LMSLogo size={16} />

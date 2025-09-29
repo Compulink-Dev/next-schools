@@ -8,12 +8,22 @@ import { createSubject, updateSubject } from "@/lib/actions";
 import { Dispatch, SetStateAction, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Controller } from "react-hook-form";
 
 // Client-safe values: strings from inputs
 type SubjectFormValues = {
   id?: string;
   name: string;
-  teachers: string[]; // will be converted to number[]
+  teachers: string[];
 };
 
 const SubjectForm = ({
@@ -37,6 +47,7 @@ const SubjectForm = ({
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<SubjectFormValues>({
     resolver: zodResolver(subjectSchema),
@@ -52,9 +63,10 @@ const SubjectForm = ({
     console.log("📤 Form values before payload:", formData);
 
     try {
+      // Prepare the payload according to SubjectSchema
       const payload = {
         name: formData.name,
-        teachers: formData.teachers, // Now string[], not parsed to numbers
+        teachers: formData.teachers, // Keep as strings
       };
 
       let response;
@@ -69,7 +81,12 @@ const SubjectForm = ({
           return;
         }
 
-        const fullPayload = { ...payload, id: parseInt(formData.id) };
+        // For update, include the ID as a number (convert from string)
+        const fullPayload = {
+          ...payload,
+          id: formData.id, // Convert string ID to number
+        };
+
         console.log(
           "🛠️ Sending update request with full payload:",
           fullPayload
@@ -85,9 +102,6 @@ const SubjectForm = ({
         );
         setOpen(false);
         router.refresh();
-      } else {
-        toast.error("Failed to process the subject.");
-        console.warn("⚠️ Operation failed with response:", response);
       }
     } catch (error) {
       toast.error("An unexpected error occurred.");
@@ -95,7 +109,9 @@ const SubjectForm = ({
     }
   });
 
+  console.log("SubjectForm received relatedData:", relatedData);
   const { teachers = [] } = relatedData || {};
+  console.log("Teachers : ", teachers);
 
   return (
     <form
@@ -128,18 +144,36 @@ const SubjectForm = ({
         />
 
         <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Teachers</label>
-          <select
-            multiple
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("teachers")}
-          >
-            {teachers.map((teacher) => (
-              <option key={teacher.id} value={teacher.id.toString()}>
-                {teacher.name} {teacher.surname}
-              </option>
-            ))}
-          </select>
+          <label className="text-xs text-gray-500">Teacher</label>
+
+          <Controller
+            control={control}
+            name="teachers"
+            render={({ field }) => (
+              <Select
+                value={field.value?.[0] || ""}
+                onValueChange={(val) => field.onChange([val])}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a teacher" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Teachers</SelectLabel>
+                    {teachers.map((teacher) => (
+                      <SelectItem
+                        key={teacher.id}
+                        value={teacher.id.toString()}
+                      >
+                        {teacher.name} {teacher.surname}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            )}
+          />
+
           {errors.teachers?.message && (
             <p className="text-xs text-red-400">
               {errors.teachers.message.toString()}

@@ -5,9 +5,18 @@ import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
-import { Attendance, Class, Lesson, Prisma, Student, Subject, Teacher } from "@prisma/client";
+import {
+  Attendance,
+  Class,
+  Lesson,
+  Prisma,
+  Student,
+  Subject,
+  Teacher,
+} from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
+import { DataTable } from "@/components/DataTable";
 
 // Define a type for the Attendance data with related information
 type AttendanceList = Attendance & {
@@ -65,7 +74,9 @@ const AttendanceListPage = async ({
       key={item.id}
       className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaYellowLight"
     >
-      <td className="flex items-center gap-4 p-4">{item.student.name + " " + item.student.surname}</td>
+      <td className="flex items-center gap-4 p-4">
+        {item.student.name + " " + item.student.surname}
+      </td>
       <td>{item.lesson.subject.name}</td>
       <td>{item.lesson.class.name}</td>
       <td className="hidden md:table-cell">
@@ -179,9 +190,14 @@ const AttendanceListPage = async ({
         </div>
       </div>
       {/* LIST */}
-      <Table columns={columns} renderRow={renderRow} data={data} />
+      <DataTable
+        columns={columns}
+        data={data}
+        searchKey="name"
+        searchPlaceholder="Search attendance..."
+      />
       {/* PAGINATION */}
-      <Pagination page={p} count={count} />
+      {/* <Pagination page={p} count={count} /> */}
     </div>
   );
 };

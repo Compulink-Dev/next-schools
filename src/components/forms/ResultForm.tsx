@@ -14,6 +14,7 @@ const ResultForm = ({
   type,
   data,
   setOpen,
+  relatedData,
 }: {
   type: "create" | "update";
   data: {
@@ -28,6 +29,7 @@ const ResultForm = ({
     startTime: string;
   };
   setOpen: Dispatch<SetStateAction<boolean>>;
+  relatedData: any;
 }) => {
   if (type === "create") {
     console.warn("⚠️ Tried to render ResultForm in 'create' mode.");

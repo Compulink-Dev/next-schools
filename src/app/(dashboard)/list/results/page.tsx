@@ -7,6 +7,7 @@ import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Prisma } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
+import { DataTable } from "@/components/DataTable";
 
 type ResultList = {
   id: number;
@@ -33,7 +34,11 @@ const ResultListPage = async ({
     { header: "Title", accessor: "title" },
     { header: "Student", accessor: "student" },
     { header: "Score", accessor: "score", className: "hidden md:table-cell" },
-    { header: "Teacher", accessor: "teacher", className: "hidden md:table-cell" },
+    {
+      header: "Teacher",
+      accessor: "teacher",
+      className: "hidden md:table-cell",
+    },
     { header: "Class", accessor: "class", className: "hidden md:table-cell" },
     { header: "Date", accessor: "date", className: "hidden md:table-cell" },
     ...(role === "admin" || role === "teacher"
@@ -144,7 +149,9 @@ const ResultListPage = async ({
       const assessment = item.exam || item.assignment;
 
       if (!assessment) {
-        console.warn(`❌ Skipped result ID ${item.id} — no exam or assignment.`);
+        console.warn(
+          `❌ Skipped result ID ${item.id} — no exam or assignment.`
+        );
         return null;
       }
 
@@ -184,8 +191,13 @@ const ResultListPage = async ({
         </div>
       </div>
 
-      <Table columns={columns} renderRow={renderRow} data={data} />
-      <Pagination page={p} count={count} />
+      <DataTable
+        columns={columns}
+        data={data}
+        searchKey="name"
+        searchPlaceholder="Search result..."
+      />
+      {/* <Pagination page={p} count={count} /> */}
     </div>
   );
 };

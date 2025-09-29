@@ -15,6 +15,7 @@ import {
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
 import { format } from "date-fns";
+import { DataTable } from "@/components/DataTable";
 
 type AssignmentList = Assignment & {
   lesson: {
@@ -207,9 +208,14 @@ const AssignmentListPage = async ({
 
         <div className="overflow-x-auto">
           {/* Added horizontal scrolling */}
-          <Table columns={columns} renderRow={renderRow} data={data} />
+          <DataTable
+            columns={columns}
+            data={data}
+            searchKey="name"
+            searchPlaceholder="Search assignment..."
+          />
         </div>
-        <Pagination count={count} page={p} />
+        {/* <Pagination count={count} page={p} /> */}
       </div>
     );
   } catch (error) {

@@ -11,6 +11,9 @@ import Link from "next/link";
 
 import { auth } from "@clerk/nextjs/server";
 import { Eye } from "lucide-react";
+import FormContainerServer from "@/components/FormContainerServer";
+import { DataTable } from "@/components/DataTable";
+import { columns } from "./columns";
 
 type StudentList = Student & { class: Class };
 
@@ -21,41 +24,6 @@ const StudentListPage = async ({
 }) => {
   const { sessionClaims } = auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
-
-  const columns = [
-    {
-      header: "Info",
-      accessor: "info",
-    },
-    {
-      header: "Student ID",
-      accessor: "studentId",
-      className: "hidden md:table-cell",
-    },
-    {
-      header: "Grade",
-      accessor: "grade",
-      className: "hidden md:table-cell",
-    },
-    {
-      header: "Phone",
-      accessor: "phone",
-      className: "hidden lg:table-cell",
-    },
-    {
-      header: "Address",
-      accessor: "address",
-      className: "hidden lg:table-cell",
-    },
-    ...(role === "admin"
-      ? [
-          {
-            header: "Actions",
-            accessor: "action",
-          },
-        ]
-      : []),
-  ];
 
   const renderRow = (item: StudentList) => (
     <tr
@@ -133,6 +101,7 @@ const StudentListPage = async ({
       where: query,
       include: {
         class: true,
+        parent: true,
       },
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
@@ -158,15 +127,20 @@ const StudentListPage = async ({
               // <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
               //   <Image src="/plus.png" alt="" width={14} height={14} />
               // </button>
-              <FormContainer table="student" type="create" />
+              <FormContainerServer table="student" type="create" />
             )}
           </div>
         </div>
       </div>
       {/* LIST */}
-      <Table columns={columns} renderRow={renderRow} data={data} />
+      <DataTable
+        columns={columns}
+        data={data}
+        searchKey="name"
+        searchPlaceholder="Search student..."
+      />
       {/* PAGINATION */}
-      <Pagination page={p} count={count} />
+      {/* <Pagination page={p} count={count} /> */}
     </div>
   );
 };

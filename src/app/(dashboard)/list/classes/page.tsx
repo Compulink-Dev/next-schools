@@ -7,6 +7,9 @@ import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Class, Prisma, Teacher } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
+import { DataTable } from "@/components/DataTable";
+import FormContainerServer from "@/components/FormContainerServer";
+import { columns } from "./columns";
 
 type ClassList = Class & { supervisor: Teacher };
 
@@ -17,36 +20,6 @@ const ClassListPage = async ({
 }) => {
   const { sessionClaims } = auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
-
-  const columns = [
-    {
-      header: "Class Name",
-      accessor: "name",
-    },
-    {
-      header: "Capacity",
-      accessor: "capacity",
-      className: "hidden md:table-cell",
-    },
-    {
-      header: "Grade",
-      accessor: "grade",
-      className: "hidden md:table-cell",
-    },
-    {
-      header: "Supervisor",
-      accessor: "supervisor",
-      className: "hidden md:table-cell",
-    },
-    ...(role === "admin"
-      ? [
-          {
-            header: "Actions",
-            accessor: "action",
-          },
-        ]
-      : []),
-  ];
 
   const renderRow = (item: ClassList) => (
     <tr
@@ -123,14 +96,22 @@ const ClassListPage = async ({
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
-            {role === "admin" && <FormContainer table="class" type="create" />}
+            {role === "admin" && (
+              <FormContainerServer table="class" type="create" />
+            )}
           </div>
         </div>
       </div>
-      {/* LIST */}
-      <Table columns={columns} renderRow={renderRow} data={data} />
+      {/* DataTable */}
+      <DataTable
+        columns={columns}
+        data={data}
+        searchKey="name"
+        searchPlaceholder="Search subject..."
+      />
+
       {/* PAGINATION */}
-      <Pagination page={p} count={count} />
+      {/* <Pagination page={p} count={count} /> */}
     </div>
   );
 };

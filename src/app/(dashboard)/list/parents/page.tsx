@@ -10,6 +10,9 @@ import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link"; // Import Link
 import { Eye } from "lucide-react"; // Import Eye icon
+import { DataTable } from "@/components/DataTable";
+import { columns } from "./coulmns";
+import FormContainerServer from "@/components/FormContainerServer";
 
 type ParentList = Parent & { students: Student[] };
 
@@ -20,25 +23,6 @@ const ParentListPage = async ({
 }) => {
   const { sessionClaims } = auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
-
-  const columns = [
-    { header: "Info", accessor: "info" },
-    {
-      header: "Student Names",
-      accessor: "students",
-      className: "hidden md:table-cell",
-    },
-    { header: "Phone", accessor: "phone", className: "hidden lg:table-cell" },
-    { header: "Address", accessor: "address", className: "hidden lg:table-cell" },
-    ...(role === "admin"
-      ? [
-          {
-            header: "Actions",
-            accessor: "action",
-          },
-        ]
-      : []),
-  ];
 
   const renderRow = (item: ParentList) => {
     console.log("item.id:", item.id); // Add this line to log the item.id
@@ -119,14 +103,21 @@ const ParentListPage = async ({
               <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
                 <Image src="/sort.png" alt="" width={14} height={14} />
               </button>
-              {role === "admin" && <FormContainer table="parent" type="create" />}
+              {role === "admin" && (
+                <FormContainerServer table="parent" type="create" />
+              )}
             </div>
           </div>
         </div>
         {/* LIST */}
-        <Table columns={columns} renderRow={renderRow} data={data} />
+        <DataTable
+          columns={columns}
+          data={data}
+          searchKey="name"
+          searchPlaceholder="Search parent..."
+        />
         {/* PAGINATION */}
-        <Pagination page={p} count={count} />
+        {/* <Pagination page={p} count={count} /> */}
       </div>
     );
   } catch (error) {
