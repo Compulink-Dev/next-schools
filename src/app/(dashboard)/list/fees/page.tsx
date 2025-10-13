@@ -1,19 +1,18 @@
 import FormContainer from "@/components/FormContainer";
-import Pagination from "@/components/Pagination";
 import TableSearch from "@/components/TableSearch";
 import prisma from "@/lib/prisma";
-import { ITEM_PER_PAGE } from "@/lib/settings";
-import { Class, Event, Prisma } from "@prisma/client";
+import { Fee, Class, Student, Prisma } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
 import { DataTable } from "@/components/DataTable";
 import { columns } from "./columns";
 
-type EventList = Event & {
+type FeeWithRelations = Fee & {
   class?: Class;
+  student?: Student;
 };
 
-const EventListPage = async ({
+const FeesPage = async ({
   searchParams,
 }: {
   searchParams: { [key: string]: string | undefined };
@@ -26,11 +25,15 @@ const EventListPage = async ({
   const p = page ? parseInt(page) : 1;
 
   // Build query conditions
-  const conditions: Prisma.EventWhereInput[] = [];
+  const conditions: Prisma.FeeWhereInput[] = [];
 
   // URL PARAMS CONDITION
   if (queryParams.classId) {
     conditions.push({ classId: queryParams.classId });
+  }
+
+  if (queryParams.studentId) {
+    conditions.push({ studentId: queryParams.studentId });
   }
 
   if (queryParams.search) {
@@ -43,70 +46,51 @@ const EventListPage = async ({
   }
 
   // ROLE CONDITIONS
-  if (role === "teacher") {
-    // Teachers can see events for classes they supervise AND school-wide events (classId = null)
-    conditions.push({
-      OR: [
-        { class: { supervisorId: currentUserId! } },
-        { classId: null }, // School-wide events
-      ],
-    });
-  } else if (role === "student") {
-    const student = await prisma.student.findUnique({
-      where: { id: currentUserId! },
-    });
-    if (student) {
-      conditions.push({
-        OR: [
-          { classId: student.classId },
-          { classId: null }, // School-wide events
-        ],
-      });
-    } else {
-      // If student not found, show only school-wide events
-      conditions.push({ classId: null });
-    }
+  if (role === "student") {
+    conditions.push({ studentId: currentUserId! });
   } else if (role === "parent") {
+    // Parents can see fees for their children
     const student = await prisma.student.findFirst({
       where: { parentId: currentUserId! },
     });
     if (student) {
-      conditions.push({
-        OR: [
-          { classId: student.classId },
-          { classId: null }, // School-wide events
-        ],
-      });
+      conditions.push({ studentId: student.id });
     } else {
-      // If student not found, show only school-wide events
-      conditions.push({ classId: null });
+      // If no student found, show no fees
+      conditions.push({ id: "-1" }); // This will return empty results
     }
+  } else if (role === "teacher") {
+    // Teachers can see fees for their classes
+    const teacherClasses = await prisma.class.findMany({
+      where: { supervisorId: currentUserId! },
+      select: { id: true },
+    });
+    const classIds = teacherClasses.map((c) => c.id);
+    conditions.push({
+      OR: [
+        { classId: { in: classIds } },
+        { classId: null }, // School-wide fees
+      ],
+    });
   }
 
   // Combine all conditions with AND
-  const query: Prisma.EventWhereInput =
+  const query: Prisma.FeeWhereInput =
     conditions.length > 0 ? { AND: conditions } : {};
 
-  const [data, count] = await prisma.$transaction([
-    prisma.event.findMany({
-      where: query,
-      include: {
-        class: true,
-      },
-      take: ITEM_PER_PAGE,
-      skip: ITEM_PER_PAGE * (p - 1),
-      orderBy: {
-        startTime: "asc",
-      },
-    }),
-    prisma.event.count({ where: query }),
-  ]);
+  const fees = await prisma.fee.findMany({
+    where: query,
+    include: {
+      class: { select: { name: true } },
+      student: { select: { name: true, surname: true } },
+    },
+    orderBy: { dueDate: "asc" },
+  });
 
   return (
     <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-      {/* TOP */}
       <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">Events</h1>
+        <h1 className="hidden md:block text-lg font-semibold">Fees</h1>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
           <TableSearch />
           <div className="flex items-center gap-4 self-end">
@@ -117,22 +101,20 @@ const EventListPage = async ({
               <Image src="/sort.png" alt="" width={14} height={14} />
             </button>
             {(role === "admin" || role === "teacher") && (
-              <FormContainer table="event" type="create" />
+              <FormContainer table="fee" type="create" />
             )}
           </div>
         </div>
       </div>
-      {/* LIST */}
+
       <DataTable
         columns={columns}
-        data={data}
+        data={fees}
         searchKey="title"
-        searchPlaceholder="Search event..."
+        searchPlaceholder="Search fee..."
       />
-      {/* PAGINATION */}
-      {/* <Pagination page={p} count={count} /> */}
     </div>
   );
 };
 
-export default EventListPage;
+export default FeesPage;

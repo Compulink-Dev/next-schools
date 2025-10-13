@@ -24,7 +24,7 @@ type AnnouncementFormProps = {
   type: "create" | "update";
   data?: AnnouncementSchema;
   setOpen: Dispatch<SetStateAction<boolean>>;
-  relatedData?: { classes: { id: number; name: string }[] };
+relatedData?: { classes: { id: string; name: string }[] };
 };
 
 const AnnouncementForm = ({
@@ -92,14 +92,6 @@ const AnnouncementForm = ({
         />
 
         <InputField
-          label="Description"
-          name="description"
-          defaultValue={data?.description}
-          register={register}
-          error={errors?.description}
-        />
-
-        <InputField
           label="Date"
           type="datetime-local"
           name="date"
@@ -128,6 +120,15 @@ const AnnouncementForm = ({
             </p>
           )}
         </div>
+
+        {/* Move description to bottom */}
+        <InputField
+          label="Description"
+          name="description"
+          defaultValue={data?.description}
+          register={register}
+          error={errors?.description}
+        />
       </div>
 
       {state.error && (

@@ -1,7 +1,4 @@
-// AnnouncementListPage.tsx
 import FormContainer from "@/components/FormContainer";
-import Pagination from "@/components/Pagination";
-import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
@@ -9,10 +6,10 @@ import { Announcement, Class, Prisma } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
 import { DataTable } from "@/components/DataTable";
+import { columns } from "./columns";
 
-// Define a type for the Announcement data with related information
 type AnnouncementList = Announcement & {
-  class?: Class; // Class is optional because classId can be null
+  class?: Class;
 };
 
 const AnnouncementListPage = async ({
@@ -24,126 +21,87 @@ const AnnouncementListPage = async ({
   const role = (sessionClaims?.metadata as { role?: string })?.role;
   const currentUserId = userId;
 
-  const columns = [
-    {
-      header: "Title",
-      accessor: "title",
-    },
-    {
-      header: "Description",
-      accessor: "description",
-    },
-    {
-      header: "Date",
-      accessor: "date",
-      className: "hidden md:table-cell",
-    },
-    {
-      header: "Class",
-      accessor: "className", // Display class name if announcement is associated with a class
-    },
-    ...(role === "admin" || role === "teacher"
-      ? [
-          {
-            header: "Actions",
-            accessor: "action",
-          },
-        ]
-      : []),
-  ];
-
-  const renderRow = (item: AnnouncementList) => (
-    <tr
-      key={item.id}
-      className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaYellowLight"
-    >
-      <td className="flex items-center gap-4 p-4">{item.title}</td>
-      <td>{item.description}</td>
-      <td className="hidden md:table-cell">
-        {new Intl.DateTimeFormat("en-US").format(item.date)}
-      </td>
-      <td>{item.class?.name || "All Classes"}</td>{" "}
-      {/* Display class name or "All Classes" */}
-      <td>
-        <div className="flex items-center gap-2">
-          {(role === "admin" || role === "teacher") && (
-            <>
-              <FormContainer table="announcement" type="update" data={item} />
-              <FormContainer table="announcement" type="delete" id={item.id} />
-            </>
-          )}
-        </div>
-      </td>
-    </tr>
-  );
-
   const { page, ...queryParams } = searchParams;
-
   const p = page ? parseInt(page) : 1;
 
-  // URL PARAMS CONDITION
-  const query: Prisma.AnnouncementWhereInput = {};
+  // Build query conditions
+  const conditions: Prisma.AnnouncementWhereInput[] = [];
 
-  if (queryParams) {
-    for (const [key, value] of Object.entries(queryParams)) {
-      if (value !== undefined) {
-        switch (key) {
-          case "classId":
-            //@ts-ignore
-            query.classId = parseInt(value as string);
-            break;
-          case "search":
-            query.title = { contains: value as string, mode: "insensitive" };
-            break;
-          default:
-            break;
-        }
-      }
-    }
+  // URL PARAMS CONDITION
+  if (queryParams.classId) {
+    conditions.push({ classId: queryParams.classId });
+  }
+
+  if (queryParams.search) {
+    conditions.push({
+      OR: [
+        { title: { contains: queryParams.search, mode: "insensitive" } },
+        { description: { contains: queryParams.search, mode: "insensitive" } },
+      ],
+    });
+  }
+
+  if (queryParams.priority) {
+    conditions.push({
+      priority: { equals: queryParams.priority, mode: "insensitive" },
+    });
   }
 
   // ROLE CONDITIONS
-  // Teachers can only see announcements for classes they supervise
   if (role === "teacher") {
-    query.class = { supervisorId: currentUserId! };
-  }
-  // Students and Parents can only see announcements related to their class
-  if (role === "student") {
+    // Teachers can see announcements for classes they supervise AND school-wide announcements
+    conditions.push({
+      OR: [
+        { class: { supervisorId: currentUserId! } },
+        { classId: null }, // School-wide announcements
+      ],
+    });
+  } else if (role === "student") {
     const student = await prisma.student.findUnique({
       where: { id: currentUserId! },
     });
     if (student) {
-      query.classId = student.classId;
+      conditions.push({
+        OR: [
+          { classId: student.classId },
+          { classId: null }, // School-wide announcements
+        ],
+      });
     } else {
-      // If student not found, show no announcements
-      //@ts-ignore
-      query.id = -1; // This will return an empty set
+      // If student not found, show only school-wide announcements
+      conditions.push({ classId: null });
     }
-  }
-  if (role === "parent") {
-    // Find the student associated with the parent and show that class' announcements
+  } else if (role === "parent") {
     const student = await prisma.student.findFirst({
       where: { parentId: currentUserId! },
     });
     if (student) {
-      query.classId = student.classId;
+      conditions.push({
+        OR: [
+          { classId: student.classId },
+          { classId: null }, // School-wide announcements
+        ],
+      });
     } else {
-      // If student not found, show no announcements
-      //@ts-ignore
-      query.id = -1; // This will return an empty set
+      // If student not found, show only school-wide announcements
+      conditions.push({ classId: null });
     }
   }
+
+  // Combine all conditions with AND
+  const query: Prisma.AnnouncementWhereInput =
+    conditions.length > 0 ? { AND: conditions } : {};
 
   const [data, count] = await prisma.$transaction([
     prisma.announcement.findMany({
       where: query,
       include: {
-        class: true, // Include class information
+        class: true,
       },
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
       orderBy: {
-        date: "asc", // Or 'desc' for descending order
+        date: "desc",
       },
     }),
     prisma.announcement.count({ where: query }),
@@ -173,8 +131,8 @@ const AnnouncementListPage = async ({
       <DataTable
         columns={columns}
         data={data}
-        searchKey="name"
-        searchPlaceholder="Search announcement...."
+        searchKey="title"
+        searchPlaceholder="Search announcements..."
       />
     </div>
   );

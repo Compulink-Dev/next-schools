@@ -21,29 +21,10 @@ const LessonListPage = async ({
   const { sessionClaims } = auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
 
-  const columns = [
-    {
-      header: "Subject Name",
-      accessor: "name",
-    },
-    {
-      header: "Class",
-      accessor: "class",
-    },
-    {
-      header: "Teacher",
-      accessor: "teacher",
-      className: "hidden md:table-cell",
-    },
-    ...(role === "admin"
-      ? [
-          {
-            header: "Actions",
-            accessor: "action",
-          },
-        ]
-      : []),
-  ];
+  // Use richer column definitions
+  // columns are defined in ./columns.tsx
+  // @ts-ignore
+  const { columns } = await import("./columns");
 
   const renderRow = (item: LessonList) => (
     <tr
@@ -82,7 +63,7 @@ const LessonListPage = async ({
         switch (key) {
           case "classId":
             //@ts-ignore
-            query.classId = parseInt(value);
+            query.classId = value;
             break;
           case "teacherId":
             query.teacherId = value;

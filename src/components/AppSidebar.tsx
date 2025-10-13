@@ -37,6 +37,7 @@ import {
   Settings,
   LogOut,
   type LucideIcon,
+  BadgeDollarSignIcon,
 } from "lucide-react";
 
 interface MenuItem {
@@ -99,6 +100,7 @@ const menuSections: MenuSection[] = [
         href: "/list/lessons",
         visible: ["admin", "teacher"],
       },
+
       {
         icon: ClipboardList,
         label: "Exams",
@@ -127,6 +129,12 @@ const menuSections: MenuSection[] = [
         icon: CalendarCheck,
         label: "Events",
         href: "/list/events",
+        visible: ["admin", "teacher", "student", "parent"],
+      },
+      {
+        icon: BadgeDollarSignIcon,
+        label: "Fees",
+        href: "/list/fees",
         visible: ["admin", "teacher", "student", "parent"],
       },
       {

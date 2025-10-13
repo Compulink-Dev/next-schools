@@ -33,7 +33,7 @@ const ExamForm = ({
   type: "create" | "update";
   data?: Partial<ExamSchema>;
   setOpen: Dispatch<SetStateAction<boolean>>;
-  relatedData?: { lessons: { id: number; name: string }[] };
+relatedData?: { lessons: { id: string; name: string }[] };
 }) => {
   const {
     register,
@@ -56,7 +56,7 @@ const ExamForm = ({
     console.log("🧾 Form mounted for:", type);
   }, [type]);
 
-  const onSubmit = handleSubmit(
+const onSubmit = handleSubmit(
     async (formData) => {
       console.log("📤 Form submitted with values:", formData);
 
@@ -65,7 +65,7 @@ const ExamForm = ({
           title: formData.title,
           startTime: new Date(formData.startTime),
           endTime: new Date(formData.endTime),
-          lessonId: parseInt(formData.lessonId),
+          lessonId: formData.lessonId,
         };
 
         let response;
@@ -78,7 +78,7 @@ const ExamForm = ({
             console.error("❌ No ID provided in formData.");
             return;
           }
-          const updatePayload = { ...payload, id: parseInt(formData.id) };
+const updatePayload = { ...payload, id: formData.id };
           console.log("🛠️ Sending update request with payload:", updatePayload);
           response = await updateExam(updatePayload);
         }

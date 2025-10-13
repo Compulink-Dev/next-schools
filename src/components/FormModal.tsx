@@ -6,6 +6,14 @@ import {
   deleteStudent,
   deleteSubject,
   deleteTeacher,
+  deleteParent,
+  deleteLesson,
+  deleteAssignment,
+  deleteResult,
+  deleteAttendance,
+  deleteEvent,
+  deleteAnnouncement,
+  deleteFee,
 } from "@/lib/actions";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -13,7 +21,7 @@ import { useRouter } from "next/navigation";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { useFormState } from "react-dom";
 import { FormContainerProps } from "./FormContainer";
-import { X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
 const deleteActionMap = {
@@ -22,14 +30,14 @@ const deleteActionMap = {
   teacher: deleteTeacher,
   student: deleteStudent,
   exam: deleteExam,
-  // TODO: OTHER DELETE ACTIONS
-  parent: deleteSubject,
-  lesson: deleteSubject,
-  assignment: deleteSubject,
-  result: deleteSubject,
-  attendance: deleteSubject,
-  event: deleteSubject,
-  announcement: deleteSubject,
+  parent: deleteParent,
+  lesson: deleteLesson,
+  assignment: deleteAssignment,
+  result: deleteResult,
+  attendance: deleteAttendance,
+  event: deleteEvent,
+  announcement: deleteAnnouncement,
+  fee: deleteFee,
 };
 
 // USE LAZY LOADING
@@ -38,39 +46,104 @@ const deleteActionMap = {
 // import StudentForm from "./forms/StudentForm";
 
 const TeacherForm = dynamic(() => import("./forms/TeacherForm"), {
-  loading: () => <h1>Loading...</h1>,
+  loading: () => (
+    <div className="">
+      <Loader2 className="animate-spiner" />
+    </div>
+  ),
 });
 const StudentForm = dynamic(() => import("./forms/StudentForm"), {
-  loading: () => <h1>Loading...</h1>,
+  loading: () => (
+    <div className="">
+      <Loader2 className="animate-spiner" />
+    </div>
+  ),
+});
+const AssignmentForm = dynamic(() => import("./forms/AssignmentForm"), {
+  loading: () => (
+    <div className="">
+      <Loader2 className="animate-spiner" />
+    </div>
+  ),
+});
+const AttendanceForm = dynamic(() => import("./forms/AttendanceForm"), {
+  loading: () => (
+    <div className="">
+      <Loader2 className="animate-spiner" />
+    </div>
+  ),
 });
 const SubjectForm = dynamic(() => import("./forms/SubjectForm"), {
-  loading: () => <h1>Loading...</h1>,
+  loading: () => (
+    <div className="">
+      <Loader2 className="animate-spiner" />
+    </div>
+  ),
 });
 const ClassForm = dynamic(() => import("./forms/ClassForm"), {
-  loading: () => <h1>Loading...</h1>,
+  loading: () => (
+    <div className="">
+      <Loader2 className="animate-spiner" />
+    </div>
+  ),
 });
 const ExamForm = dynamic(() => import("./forms/ExamForm"), {
-  loading: () => <h1>Loading...</h1>,
+  loading: () => (
+    <div className="">
+      <Loader2 className="animate-spiner" />
+    </div>
+  ),
 });
 const ParentForm = dynamic(() => import("./forms/ParentForm"), {
-  loading: () => <h1>Loading...</h1>,
+  loading: () => (
+    <div className="">
+      <Loader2 className="animate-spiner" />
+    </div>
+  ),
 });
 const EventForm = dynamic(() => import("./forms/EventForm"), {
-  loading: () => <h1>Loading...</h1>,
+  loading: () => (
+    <div className="">
+      <Loader2 className="animate-spiner" />
+    </div>
+  ),
 });
 const LessonForm = dynamic(() => import("./forms/LessonForm"), {
-  loading: () => <h1>Loading...</h1>,
+  loading: () => (
+    <div className="">
+      <Loader2 className="animate-spiner" />
+    </div>
+  ),
 });
 const MessageForm = dynamic(() => import("./forms/MessageForm"), {
-  loading: () => <h1>Loading...</h1>,
+  loading: () => (
+    <div className="">
+      <Loader2 className="animate-spiner" />
+    </div>
+  ),
 });
 const ResultForm = dynamic(() => import("./forms/ResultForm"), {
-  loading: () => <h1>Loading...</h1>,
+  loading: () => (
+    <div className="">
+      <Loader2 className="animate-spiner" />
+    </div>
+  ),
 });
 const AnnouncementForm = dynamic(() => import("./forms/AnnouncementForm"), {
-  loading: () => <h1>Loading...</h1>,
+  loading: () => (
+    <div className="">
+      <Loader2 className="animate-spiner" />
+    </div>
+  ),
 });
-// TODO: OTHER FORMS
+const FeeForm = dynamic(() => import("./forms/FeeForm"), {
+  loading: () => (
+    <div className="">
+      <Loader2 className="animate-spiner" />
+    </div>
+  ),
+});
+// Additional lazy-loaded forms
 
 const forms: {
   [key: string]: (
@@ -169,6 +242,30 @@ const forms: {
       relatedData={relatedData}
     />
   ),
+  assignment: (setOpen, type, data, relatedData) => (
+    <AssignmentForm
+      type={type}
+      data={data}
+      setOpen={setOpen}
+      relatedData={relatedData}
+    />
+  ),
+  attendance: (setOpen, type, data, relatedData) => (
+    <AttendanceForm
+      type={type}
+      data={data}
+      setOpen={setOpen}
+      relatedData={relatedData}
+    />
+  ),
+  fee: (setOpen, type, data, relatedData) => (
+    <FeeForm
+      type={type}
+      data={data}
+      setOpen={setOpen}
+      relatedData={relatedData}
+    />
+  ),
 };
 
 const FormModal = ({
@@ -208,7 +305,7 @@ const FormModal = ({
 
     return type === "delete" && id ? (
       <form action={formAction} className="p-4 flex flex-col gap-4">
-        <input type="text | number" name="id" value={id} hidden />
+        <input type="hidden" name="id" value={id} />
         <span className="text-center font-medium">
           All data will be lost. Are you sure you want to delete this {table}?
         </span>

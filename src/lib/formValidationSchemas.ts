@@ -87,11 +87,11 @@ export type StudentSchema = z.infer<typeof studentSchema>;
 //exam shema
 
 export const examSchema = z.object({
-  id: z.string().optional(), // Should be string for MongoDB
+  id: z.string().optional(), // MongoDB ObjectId as string
   title: z.string().min(1, { message: "Title name is required!" }),
-  startTime: z.string().min(1, { message: "Start time is required!" }).transform(str => new Date(str)),
-  endTime: z.string().min(1, { message: "End time is required!" }).transform(str => new Date(str)),
-  lessonId: z.string().min(1, { message: "Lesson is required!" }).transform(str => Number(str)),
+  startTime: z.coerce.date({ message: "Start time is required!" }),
+  endTime: z.coerce.date({ message: "End time is required!" }),
+  lessonId: z.string().min(1, { message: "Lesson is required!" }),
 });
 
 export type ExamSchema = z.infer<typeof examSchema>;
@@ -100,8 +100,8 @@ export type ExamSchema = z.infer<typeof examSchema>;
 export const assignmentSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(1, "Title is required"),
-  startDate: z.string().min(1, "Start date is required"),
-  dueDate: z.string().min(1, "Due date is required"),
+  startDate: z.coerce.date({ message: "Start date is required" }),
+  dueDate: z.coerce.date({ message: "Due date is required" }),
   lessonId: z.string().min(1, "Lesson is required"),
 });
 
@@ -109,11 +109,11 @@ export type AssignmentSchema = z.infer<typeof assignmentSchema>;
 
 // Result Schema
 export const resultSchema = z.object({
-  id: z.string().optional(), // Should be string for MongoDB
-  score: z.coerce.number().min(0, { message: "Score must be at least 0!" }), // Editable field
-  examId: z.coerce.number().optional(), // Optional for reference
-  assignmentId: z.coerce.number().optional(), // Optional for reference
-  studentId: z.string().min(1, { message: "Student ID is required!" }), // Read-only
+  id: z.string().optional(),
+  score: z.coerce.number().min(0, { message: "Score must be at least 0!" }),
+  examId: z.string().optional(),
+  assignmentId: z.string().optional(),
+  studentId: z.string().min(1, { message: "Student ID is required!" }),
 });
 
 export type ResultSchema = z.infer<typeof resultSchema>;
@@ -136,34 +136,40 @@ export type LessonSchema = z.infer<typeof lessonSchema>;
 //attendance schema
 
 export const attendanceSchema = z.object({
-  id: z.string().optional(), // Should be string for MongoDB
+  id: z.string().optional(),
   studentId: z.string({ required_error: "Student is required" }),
-  lessonId: z.coerce.number({ required_error: "Lesson is required" }),
+  lessonId: z.string({ required_error: "Lesson is required" }),
   date: z.coerce.date({ required_error: "Date is required" }),
-  present: z.boolean().optional().default(false), // Optional and default to false
+  present: z.boolean().optional().default(false),
 });
 
 export type AttendanceSchema = z.infer<typeof attendanceSchema>;
 
 // Event Schema
 export const eventSchema = z.object({
-  id: z.string().optional(), // Should be string for MongoDB
+  id: z.string().optional(),
   title: z.string({ required_error: "Title is required" }),
   description: z.string({ required_error: "Description is required" }),
   startTime: z.coerce.date({ required_error: "Start Time is required" }),
   endTime: z.coerce.date({ required_error: "End Time is required" }),
-  classId: z.coerce.number().optional().nullable(), // Optional and nullable
+  classId: z
+    .union([z.string().min(1), z.literal("")])
+    .optional()
+    .transform((v) => (v === "" ? undefined : v)),
 });
 
 export type EventSchema = z.infer<typeof eventSchema>;
 
 // Announcement Schema
 export const announcementSchema = z.object({
-  id: z.string().optional(), // Should be string for MongoDB
+  id: z.string().optional(),
   title: z.string({ required_error: "Title is required" }),
   description: z.string({ required_error: "Description is required" }),
   date: z.coerce.date({ required_error: "Date is required" }),
-  classId: z.coerce.number().optional().nullable(), // Optional and nullable
+  classId: z
+    .union([z.string().min(1), z.literal("")])
+    .optional()
+    .transform((v) => (v === "" ? undefined : v)),
 });
 
 export type AnnouncementSchema = z.infer<typeof announcementSchema>;

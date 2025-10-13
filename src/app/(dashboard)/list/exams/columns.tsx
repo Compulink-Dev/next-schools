@@ -1,15 +1,23 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import { Exam, Class, Subject, Teacher } from "@prisma/client";
 import { Eye } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import DeleteButton from "@/components/DeleteButton";
 import { toast } from "sonner";
 import FormContainer from "@/components/FormContainer";
-import { LessonWithRelations } from "../../../../../types/lessons";
 
-export const columns: ColumnDef<LessonWithRelations>[] = [
+export type ExamWithRelations = Exam & {
+  lesson: {
+    subject: Subject;
+    class: Class;
+    teacher: Teacher;
+  };
+};
+
+export const columns: ColumnDef<ExamWithRelations>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -32,68 +40,75 @@ export const columns: ColumnDef<LessonWithRelations>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "subject.name",
-    header: "Subject Name",
+    accessorKey: "title",
+    header: "Exam Title",
   },
   {
-    accessorKey: "class.name",
+    accessorKey: "subject",
+    header: "Subject Name",
+    cell: ({ row }) => row.original.lesson.subject.name,
+  },
+  {
+    accessorKey: "class",
     header: "Class",
+    cell: ({ row }) => row.original.lesson.class.name,
   },
   {
     accessorKey: "teacher",
     header: "Teacher",
     cell: ({ row }) =>
-      `${row.original.teacher.name} ${row.original.teacher.surname}`,
+      `${row.original.lesson.teacher.name} ${row.original.lesson.teacher.surname}`,
   },
   {
-    accessorKey: "schedule",
-    header: "Schedule",
+    accessorKey: "startTime",
+    header: "Date",
+    cell: ({ row }) =>
+      new Intl.DateTimeFormat("en-US").format(row.original.startTime),
+  },
+  {
+    accessorKey: "duration",
+    header: "Duration",
     cell: ({ row }) => {
-      const lesson = row.original;
-      return lesson.day
-        ? `${lesson.day} ${new Date(lesson.startTime).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}-${new Date(lesson.endTime).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}`
-        : "Not scheduled";
+      const start = new Date(row.original.startTime);
+      const end = new Date(row.original.endTime);
+      const duration = Math.round(
+        (end.getTime() - start.getTime()) / (1000 * 60)
+      ); // in minutes
+      return `${duration} min`;
     },
   },
   {
     id: "actions",
     cell: ({ row }) => {
-      const lesson = row.original;
-      const role = "admin";
+      const exam = row.original;
 
       const handleDelete = async (id: string) => {
         try {
-          const response = await fetch(`/api/lessons/${id}`, {
+          const response = await fetch(`/api/exams/${id}`, {
             method: "DELETE",
           });
-          if (!response.ok) throw new Error("Failed to delete lesson");
-          toast("Lesson deleted successfully");
+
+          if (!response.ok) {
+            throw new Error("Failed to delete exam");
+          }
+
+          toast("Exam deleted successfully");
           window.location.reload();
         } catch (error) {
           console.error("Delete error:", error);
-          toast.error("Failed to delete lesson");
+          toast.error("Failed to delete exam");
         }
       };
 
       return (
         <div className="flex items-center gap-2">
-          <Link href={`/list/lessons/${lesson.id}`}>
+          <Link href={`/list/exams/${exam.id}`}>
             <Button size="icon" variant="outline" className="w-7 h-7">
               <Eye size={16} />
             </Button>
           </Link>
-          {role === "admin" && (
-            <>
-              <FormContainer table="lesson" type="update" data={lesson} />
-              <DeleteButton id={lesson.id} onDelete={handleDelete} />
-            </>
-          )}
+          <FormContainer table="exam" type="update" data={exam} />
+          <DeleteButton id={exam.id} onDelete={handleDelete} />
         </div>
       );
     },

@@ -1,7 +1,5 @@
-// MessageListPage.tsx
 import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
-import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
@@ -9,8 +7,8 @@ import { Message, Prisma } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
 import { DataTable } from "@/components/DataTable";
+import { columns } from "./columns";
 
-// Define a type for the Message data
 type MessageList = Message;
 
 const MessageListPage = async ({
@@ -22,112 +20,77 @@ const MessageListPage = async ({
   const role = (sessionClaims?.metadata as { role?: string })?.role;
   const currentUserId = userId;
 
-  const columns = [
-    {
-      header: "Title",
-      accessor: "title",
-    },
-    {
-      header: "Content",
-      accessor: "content",
-    },
-    {
-      header: "Sender ID",
-      accessor: "senderId",
-      className: "hidden md:table-cell",
-    },
-    {
-      header: "Sender Type",
-      accessor: "senderType",
-      className: "hidden md:table-cell",
-    },
-    {
-      header: "Receiver ID",
-      accessor: "receiverId",
-      className: "hidden md:table-cell",
-    },
-    {
-      header: "Receiver Type",
-      accessor: "receiverType",
-      className: "hidden md:table-cell",
-    },
-    ...(role === "admin" || role === "teacher"
-      ? [
-          {
-            header: "Actions",
-            accessor: "action",
-          },
-        ]
-      : []),
-  ];
-
-  const renderRow = (item: MessageList) => (
-    <tr
-      key={item.id}
-      className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaYellowLight"
-    >
-      <td className="flex items-center gap-4 p-4">{item.title}</td>
-      <td>{item.content}</td>
-      <td className="hidden md:table-cell">{item.senderId}</td>
-      <td className="hidden md:table-cell">{item.senderType}</td>
-      <td className="hidden md:table-cell">{item.receiverId}</td>
-      <td className="hidden md:table-cell">{item.receiverType}</td>
-      <td>
-        <div className="flex items-center gap-2">
-          {(role === "admin" || role === "teacher") && (
-            <>
-              <FormContainer table="message" type="update" data={item} />
-              <FormContainer table="message" type="delete" id={item.id} />
-            </>
-          )}
-        </div>
-      </td>
-    </tr>
-  );
-
   const { page, ...queryParams } = searchParams;
-
   const p = page ? parseInt(page) : 1;
 
-  // URL PARAMS CONDITION
-  const query: Prisma.MessageWhereInput = {};
+  // Build query conditions
+  const conditions: Prisma.MessageWhereInput[] = [];
 
-  if (queryParams) {
-    for (const [key, value] of Object.entries(queryParams)) {
-      if (value !== undefined) {
-        switch (key) {
-          case "search":
-            query.title = { contains: value as string, mode: "insensitive" };
-            break;
-          case "senderId":
-            query.senderId = { contains: value as string, mode: "insensitive" };
-            break;
-          case "receiverId":
-            query.receiverId = {
-              contains: value as string,
-              mode: "insensitive",
-            };
-            break;
-          // Add more cases for other filterable fields
-          default:
-            break;
-        }
-      }
-    }
+  // URL PARAMS CONDITION
+  if (queryParams.search) {
+    conditions.push({
+      OR: [
+        { title: { contains: queryParams.search, mode: "insensitive" } },
+        { content: { contains: queryParams.search, mode: "insensitive" } },
+      ],
+    });
   }
 
-  // Fetch messages based on the query
+  if (queryParams.senderId) {
+    conditions.push({ senderId: queryParams.senderId });
+  }
+
+  if (queryParams.receiverId) {
+    conditions.push({ receiverId: queryParams.receiverId });
+  }
+
+  if (queryParams.senderType) {
+    conditions.push({ senderType: queryParams.senderType });
+  }
+
+  if (queryParams.receiverType) {
+    conditions.push({ receiverType: queryParams.receiverType });
+  }
+
+  // ROLE CONDITIONS - Users can only see messages they sent or received
+  if (role !== "admin") {
+    conditions.push({
+      OR: [{ senderId: currentUserId! }, { receiverId: currentUserId! }],
+    });
+  }
+
+  // Combine all conditions with AND
+  const query: Prisma.MessageWhereInput =
+    conditions.length > 0 ? { AND: conditions } : {};
+
   const [data, count] = await prisma.$transaction([
     prisma.message.findMany({
       where: query,
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
       orderBy: {
-        createdAt: "desc", // Or 'asc' for ascending order
+        createdAt: "desc",
       },
     }),
     prisma.message.count({ where: query }),
   ]);
+
+  // Mark messages as read when viewed (for receiver)
+  if (data.length > 0) {
+    const unreadMessages = data.filter(
+      (msg) => !msg.read && msg.receiverId === currentUserId
+    );
+
+    if (unreadMessages.length > 0) {
+      await prisma.message.updateMany({
+        where: {
+          id: { in: unreadMessages.map((msg) => msg.id) },
+          receiverId: currentUserId!,
+        },
+        data: { read: true },
+      });
+    }
+  }
 
   return (
     <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
@@ -153,9 +116,11 @@ const MessageListPage = async ({
       <DataTable
         columns={columns}
         data={data}
-        searchKey="name"
-        searchPlaceholder="Search message..."
+        searchKey="title"
+        searchPlaceholder="Search messages..."
       />
+      {/* PAGINATION */}
+      {/* <Pagination page={p} count={count} /> */}
     </div>
   );
 };

@@ -1,6 +1,5 @@
 import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
-import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
@@ -8,6 +7,7 @@ import { Class, Exam, Prisma, Subject, Teacher } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
 import { DataTable } from "@/components/DataTable";
+import { columns } from "./columns";
 
 type ExamList = Exam & {
   lesson: {
@@ -26,126 +26,74 @@ const ExamListPage = async ({
   const role = (sessionClaims?.metadata as { role?: string })?.role;
   const currentUserId = userId;
 
-  const columns = [
-    {
-      header: "Exam Title", // Added Exam Title column
-      accessor: "title",
-    },
-    {
-      header: "Subject Name",
-      accessor: "name",
-    },
-    {
-      header: "Class",
-      accessor: "class",
-    },
-    {
-      header: "Teacher",
-      accessor: "teacher",
-      className: "hidden md:table-cell",
-    },
-    {
-      header: "Date",
-      accessor: "date",
-      className: "hidden md:table-cell",
-    },
-    ...(role === "admin" || role === "teacher"
-      ? [
-          {
-            header: "Actions",
-            accessor: "action",
-          },
-        ]
-      : []),
-  ];
-
-  const renderRow = (item: ExamList) => (
-    <tr
-      key={item.id}
-      className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaYellowLight"
-    >
-      <td className="flex items-center gap-4 p-4">
-        {item.title} {/* Displaying Exam Title */}
-      </td>
-      <td>{item.lesson.subject.name}</td>
-      <td>{item.lesson.class.name}</td>
-      <td className="hidden md:table-cell">
-        {item.lesson.teacher.name + " " + item.lesson.teacher.surname}
-      </td>
-      <td className="hidden md:table-cell">
-        {new Intl.DateTimeFormat("en-US").format(item.startTime)}
-      </td>
-      <td>
-        <div className="flex items-center gap-2">
-          {(role === "admin" || role === "teacher") && (
-            <>
-              <FormContainer table="exam" type="update" data={item} />
-              <FormContainer table="exam" type="delete" id={item.id} />
-            </>
-          )}
-        </div>
-      </td>
-    </tr>
-  );
-
   const { page, ...queryParams } = searchParams;
-
   const p = page ? parseInt(page) : 1;
 
-  // URL PARAMS CONDITION
-  const query: Prisma.ExamWhereInput = {};
-  query.lesson = {};
-  if (queryParams) {
-    for (const [key, value] of Object.entries(queryParams)) {
-      if (value !== undefined) {
-        switch (key) {
-          case "classId":
-            //@ts-ignore
-            query.lesson.classId = parseInt(value);
-            break;
-          case "teacherId":
-            query.lesson.teacherId = value;
-            break;
-          case "search":
-            query.lesson.subject = {
-              name: { contains: value, mode: "insensitive" },
-            };
-            break;
-          default:
-            break;
-        }
-      }
+  // Start with an empty query
+  let query: Prisma.ExamWhereInput = {};
+
+  // URL PARAMS CONDITION - Build these with OR logic
+  const urlConditions: Prisma.ExamWhereInput[] = [];
+
+  if (queryParams.classId) {
+    urlConditions.push({ lesson: { classId: queryParams.classId } });
+  }
+
+  if (queryParams.teacherId) {
+    urlConditions.push({ lesson: { teacherId: queryParams.teacherId } });
+  }
+
+  if (queryParams.search) {
+    urlConditions.push({
+      OR: [
+        { title: { contains: queryParams.search, mode: "insensitive" } },
+        {
+          lesson: {
+            subject: {
+              name: { contains: queryParams.search, mode: "insensitive" },
+            },
+          },
+        },
+      ],
+    });
+  }
+
+  // Combine URL conditions with OR if there are multiple, otherwise use the single condition
+  if (urlConditions.length > 0) {
+    if (urlConditions.length === 1) {
+      query = urlConditions[0];
+    } else {
+      query = { OR: urlConditions };
     }
   }
 
-  // ROLE CONDITIONS
-  switch (role) {
-    case "admin":
-      break;
-    case "teacher":
-      query.lesson.teacherId = currentUserId!;
-      break;
-    case "student":
-      query.lesson.class = {
-        students: {
-          some: {
-            id: currentUserId!,
-          },
-        },
-      };
-      break;
-    case "parent":
-      query.lesson.class = {
-        students: {
-          some: {
-            parentId: currentUserId!,
-          },
-        },
-      };
-      break;
-    default:
-      break;
+  // ROLE CONDITIONS - Apply these separately with AND
+  let roleCondition: Prisma.ExamWhereInput = {};
+
+  if (role === "teacher") {
+    roleCondition = { lesson: { teacherId: currentUserId! } };
+  } else if (role === "student") {
+    roleCondition = {
+      lesson: {
+        class: { students: { some: { id: currentUserId! } } },
+      },
+    };
+  } else if (role === "parent") {
+    roleCondition = {
+      lesson: {
+        class: { students: { some: { parentId: currentUserId! } } },
+      },
+    };
   }
+
+  // Combine URL conditions with role conditions using AND
+  if (Object.keys(query).length > 0 && Object.keys(roleCondition).length > 0) {
+    query = { AND: [query, roleCondition] };
+  } else if (Object.keys(roleCondition).length > 0) {
+    query = roleCondition;
+  }
+
+  console.log("Final query:", JSON.stringify(query, null, 2)); // Debug log
 
   const [data, count] = await prisma.$transaction([
     prisma.exam.findMany({
@@ -161,9 +109,14 @@ const ExamListPage = async ({
       },
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
+      orderBy: {
+        startTime: "desc",
+      },
     }),
     prisma.exam.count({ where: query }),
   ]);
+
+  console.log("Found exams:", data.length); // Debug log
 
   return (
     <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
@@ -186,12 +139,23 @@ const ExamListPage = async ({
         </div>
       </div>
       {/* LIST */}
-      <DataTable
-        columns={columns}
-        data={data}
-        searchKey="name"
-        searchPlaceholder="Search exam..."
-      />
+      {data.length > 0 ? (
+        <DataTable
+          columns={columns as any}
+          data={data}
+          searchKey="title"
+          searchPlaceholder="Search exam..."
+        />
+      ) : (
+        <div className="text-center py-8">
+          <p className="text-gray-500">No exams found</p>
+          <p className="text-sm text-gray-400 mt-2">
+            {role === "admin" || role === "teacher"
+              ? "Create your first exam using the button above"
+              : "There are no exams available for you at the moment"}
+          </p>
+        </div>
+      )}
       {/* PAGINATION */}
       {/* <Pagination page={p} count={count} /> */}
     </div>

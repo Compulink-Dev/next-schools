@@ -29,7 +29,7 @@ const AttendanceForm = ({
   data?: AttendanceSchema; // Specify type for data
   setOpen: Dispatch<SetStateAction<boolean>>;
   relatedData?: {
-    lessons: { id: number; name: string }[];
+    lessons: { id: string; name: string }[];
     students: { id: string; name: string; surname: string }[];
   };
 }) => {

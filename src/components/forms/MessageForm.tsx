@@ -9,6 +9,7 @@ import { useFormState } from "react-dom";
 import { Dispatch, SetStateAction, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 
 type MessageFormProps = {
   type: "create" | "update";
@@ -41,6 +42,7 @@ const MessageForm = ({
   );
 
   const router = useRouter();
+  const { user } = useUser();
 
   useEffect(() => {
     if (state.success) {
@@ -89,31 +91,14 @@ const MessageForm = ({
           error={errors?.content}
         />
 
-        <InputField
-          label="Sender ID"
-          name="senderId"
-          defaultValue={data?.senderId}
-          register={register}
-          error={errors?.senderId}
+        {/* Auto-populate sender from current user */}
+        <input type="hidden" {...register("senderId")} value={user?.id || ""} readOnly />
+        <input
+          type="hidden"
+          {...register("senderType")}
+          value={(user?.publicMetadata?.role as string)?.toUpperCase() === "TEACHER" ? "TEACHER" : (user?.publicMetadata?.role as string)?.toUpperCase() === "STUDENT" ? "STUDENT" : "ADMIN"}
+          readOnly
         />
-
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Sender Type</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("senderType")}
-            defaultValue={data?.senderType}
-          >
-            <option value="TEACHER">Teacher</option>
-            <option value="STUDENT">Student</option>
-            <option value="ADMIN">Admin</option>
-          </select>
-          {errors.senderType?.message && (
-            <p className="text-xs text-red-400">
-              {errors.senderType.message.toString()}
-            </p>
-          )}
-        </div>
 
         <InputField
           label="Receiver ID"

@@ -173,9 +173,9 @@ export const deleteClass = async (
 ) => {
   const id = data.get("id") as string;
   try {
-    await prisma.class.delete({
+await prisma.class.delete({
       where: {
-        id: parseInt(id),
+        id: id,
       },
     });
 
@@ -535,8 +535,8 @@ export const deleteExam = async (form: FormData) => {
   console.log("🧹 [deleteExam] Attempting to delete exam with ID:", id);
 
   try {
-    await prisma.exam.delete({
-      where: { id: parseInt(id, 10) },
+await prisma.exam.delete({
+      where: { id: id },
     });
 
     console.log("✅ [deleteExam] Deleted exam with ID:", id);
@@ -553,7 +553,7 @@ export const createAssignment = async (data: {
   title: string;
   startDate: Date;
   dueDate: Date;
-  lessonId: number;
+  lessonId: string;
 }) => {
   try {
     await prisma.assignment.create({
@@ -574,15 +574,15 @@ export const createAssignment = async (data: {
 };
 //update assignment
 export const updateAssignment = async (data: {
-  id: number;
+  id: string;
   title: string;
   startDate: Date;
   dueDate: Date;
-  lessonId: number;
+  lessonId: string;
 }) => {
   try {
-    await prisma.assignment.update({
-      where: { id: data.id },
+await prisma.assignment.update({
+      where: { id: data.id as any },
       data: {
         title: data.title,
         startDate: data.startDate,
@@ -619,8 +619,8 @@ export const deleteAssignment = async (
   try {
     console.log("🗑️ [deleteAssignment] Attempting to delete assignment with ID:", id);
 
-    await prisma.assignment.delete({
-      where: { id: parseInt(id as string, 10) },
+await prisma.assignment.delete({
+      where: { id: id as string },
     });
 
     console.log("✅ [deleteAssignment] Deletion successful. Revalidating path...");
@@ -643,9 +643,9 @@ export const deleteEvent = async (
 ) => {
   const id = data.get("id") as string;
   try {
-    await prisma.event.delete({
+await prisma.event.delete({
       where: {
-        id: parseInt(id),
+        id: id,
       },
     });
 
@@ -664,9 +664,9 @@ export const deleteAnnouncement = async (
 ) => {
   const id = data.get("id") as string;
   try {
-    await prisma.announcement.delete({
+await prisma.announcement.delete({
       where: {
-        id: parseInt(id),
+        id: id,
       },
     });
 
@@ -718,9 +718,9 @@ export const deleteResult = async (
   const id = data.get("id") as string;
 
   try {
-    await prisma.result.delete({
+await prisma.result.delete({
       where: {
-        id: parseInt(id),
+        id: id,
       },
     });
 
@@ -793,9 +793,9 @@ export const deleteLesson = async (
 ) => {
   const id = data.get("id") as string;
   try {
-    await prisma.lesson.delete({
+await prisma.lesson.delete({
       where: {
-        id: parseInt(id),
+        id: id,
       },
     });
 
@@ -860,9 +860,9 @@ export const deleteAttendance = async (
 ) => {
   const id = data.get("id") as string;
   try {
-    await prisma.attendance.delete({
+await prisma.attendance.delete({
       where: {
-        id: parseInt(id),
+        id: id,
       },
     });
 
@@ -1035,9 +1035,9 @@ export const deleteMessage = async (
 ) => {
   const id = data.get("id") as string;
   try {
-    await prisma.message.delete({
+await prisma.message.delete({
       where: {
-        id: parseInt(id),
+        id: id,
       },
     });
 
@@ -1150,6 +1150,71 @@ export const deleteParent = async (
     return { success: true, error: false };
   } catch (err) {
     console.error("Error deleting parent:", err);
+    return { success: false, error: true };
+  }
+};
+
+// Fees management
+export type FeeSchema = {
+  id?: string;
+  title: string;
+  amount: number;
+  dueDate: Date;
+  classId?: string;
+  studentId?: string;
+  status?: "PENDING" | "PAID" | "PARTIAL";
+};
+
+export const createFee = async (_: any, data: FeeSchema) => {
+  try {
+    await prisma.fee.create({
+      data: {
+        title: data.title,
+        amount: data.amount,
+        dueDate: data.dueDate,
+        status: (data.status as any) ?? "PENDING",
+        classId: data.classId ?? null,
+        studentId: data.studentId ?? null,
+      },
+    });
+    revalidatePath("/list/fees");
+    return { success: true, error: false };
+  } catch (err) {
+    console.error("Error creating fee:", err);
+    return { success: false, error: true };
+  }
+};
+
+export const updateFee = async (_: any, data: FeeSchema) => {
+  try {
+    if (!data.id) return { success: false, error: true };
+    await prisma.fee.update({
+      where: { id: data.id },
+      data: {
+        title: data.title,
+        amount: data.amount,
+        dueDate: data.dueDate,
+        status: (data.status as any) ?? undefined,
+        classId: data.classId ?? null,
+        studentId: data.studentId ?? null,
+      },
+    });
+    revalidatePath("/list/fees");
+    return { success: true, error: false };
+  } catch (err) {
+    console.error("Error updating fee:", err);
+    return { success: false, error: true };
+  }
+};
+
+export const deleteFee = async (_: any, data: FormData) => {
+  const id = data.get("id") as string;
+  try {
+    await prisma.fee.delete({ where: { id } });
+    revalidatePath("/list/fees");
+    return { success: true, error: false };
+  } catch (err) {
+    console.error("Error deleting fee:", err);
     return { success: false, error: true };
   }
 };
