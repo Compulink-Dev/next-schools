@@ -174,7 +174,7 @@ const AnnouncementListPage = async ({
         columns={columns}
         data={data}
         searchKey="name"
-        searchPlaceholder="Search announcement..."
+        searchPlaceholder="Search announcement...."
       />
     </div>
   );
