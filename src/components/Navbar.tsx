@@ -2,7 +2,7 @@
 "use client";
 
 import { UserButton, useUser } from "@clerk/nextjs";
-import { AlertCircle, Bell, Mail } from "lucide-react";
+import { Bell, Mail } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -21,19 +21,33 @@ const Navbar = () => {
 
   const [messages, setMessages] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // fetch latest 5 messages and announcements
     const fetchData = async () => {
       try {
-        const [m, a] = await Promise.all([
-          fetch("/api/messages?limit=5").then((r) => r.json()),
-          fetch("/api/announcements?limit=5").then((r) => r.json()),
+        setLoading(true);
+        const [messagesRes, announcementsRes] = await Promise.all([
+          fetch("/api/messages?limit=5"),
+          fetch("/api/announcements?limit=5"),
         ]);
-        setMessages(m);
-        setAnnouncements(a);
-      } catch (_) {}
+
+        if (messagesRes.ok) {
+          const messagesData = await messagesRes.json();
+          setMessages(messagesData);
+        }
+
+        if (announcementsRes.ok) {
+          const announcementsData = await announcementsRes.json();
+          setAnnouncements(announcementsData);
+        }
+      } catch (error) {
+        console.error("Error fetching navbar data:", error);
+      } finally {
+        setLoading(false);
+      }
     };
+
     fetchData();
   }, []);
 
@@ -62,15 +76,25 @@ const Navbar = () => {
           <DropdownMenuContent align="end" className="w-72">
             <DropdownMenuLabel>Recent Messages</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {messages.length === 0 && (
+            {loading ? (
+              <DropdownMenuItem disabled>Loading...</DropdownMenuItem>
+            ) : messages.length === 0 ? (
               <DropdownMenuItem disabled>No messages</DropdownMenuItem>
+            ) : (
+              messages.map((m) => (
+                <DropdownMenuItem
+                  key={m.id}
+                  className="flex flex-col items-start"
+                >
+                  <span className="font-medium text-sm truncate w-full">
+                    {m.title}
+                  </span>
+                  <span className="text-xs text-gray-500 truncate w-full">
+                    {m.content}
+                  </span>
+                </DropdownMenuItem>
+              ))
             )}
-            {messages.map((m) => (
-              <DropdownMenuItem key={m.id} className="flex flex-col items-start">
-                <span className="font-medium text-sm truncate w-full">{m.title}</span>
-                <span className="text-xs text-gray-500 truncate w-full">{m.content}</span>
-              </DropdownMenuItem>
-            ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/list/messages" className="w-full text-center">
@@ -89,15 +113,25 @@ const Navbar = () => {
           <DropdownMenuContent align="end" className="w-72">
             <DropdownMenuLabel>Announcements</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {announcements.length === 0 && (
+            {loading ? (
+              <DropdownMenuItem disabled>Loading...</DropdownMenuItem>
+            ) : announcements.length === 0 ? (
               <DropdownMenuItem disabled>No announcements</DropdownMenuItem>
+            ) : (
+              announcements.map((a) => (
+                <DropdownMenuItem
+                  key={a.id}
+                  className="flex flex-col items-start"
+                >
+                  <span className="font-medium text-sm truncate w-full">
+                    {a.title}
+                  </span>
+                  <span className="text-xs text-gray-500 truncate w-full">
+                    {new Date(a.date).toLocaleDateString()}
+                  </span>
+                </DropdownMenuItem>
+              ))
             )}
-            {announcements.map((a) => (
-              <DropdownMenuItem key={a.id} className="flex flex-col items-start">
-                <span className="font-medium text-sm truncate w-full">{a.title}</span>
-                <span className="text-xs text-gray-500 truncate w-full">{new Date(a.date).toLocaleString()}</span>
-              </DropdownMenuItem>
-            ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/list/announcements" className="w-full text-center">
