@@ -1,8 +1,8 @@
+export const dynamic = 'force-dynamic';
 // app/api/grades/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export const dynamic = 'force-dynamic';
 
 export async function DELETE(
   request: NextRequest,
