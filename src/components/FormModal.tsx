@@ -14,6 +14,7 @@ import {
   deleteEvent,
   deleteAnnouncement,
   deleteFee,
+  deleteGrade,
 } from "@/lib/actions";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -38,6 +39,7 @@ const deleteActionMap = {
   event: deleteEvent,
   announcement: deleteAnnouncement,
   fee: deleteFee,
+  grade: deleteGrade,
 };
 
 // USE LAZY LOADING
@@ -81,6 +83,13 @@ const SubjectForm = dynamic(() => import("./forms/SubjectForm"), {
   ),
 });
 const ClassForm = dynamic(() => import("./forms/ClassForm"), {
+  loading: () => (
+    <div className="">
+      <Loader2 className="animate-spiner" />
+    </div>
+  ),
+});
+const GradeForm = dynamic(() => import("./forms/GradeForm"), {
   loading: () => (
     <div className="">
       <Loader2 className="animate-spiner" />
@@ -163,6 +172,14 @@ const forms: {
   ),
   class: (setOpen, type, data, relatedData) => (
     <ClassForm
+      type={type}
+      data={data}
+      setOpen={setOpen}
+      relatedData={relatedData}
+    />
+  ),
+  grade: (setOpen, type, data, relatedData) => (
+    <GradeForm
       type={type}
       data={data}
       setOpen={setOpen}

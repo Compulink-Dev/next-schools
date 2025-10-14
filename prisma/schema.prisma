@@ -38,23 +38,24 @@ model Student {
 }
 
 model Teacher {
-  id        String           @id @default(auto()) @map("_id") @db.ObjectId
-  clerkId   String           @unique
-  username  String           @unique
-  name      String
-  surname   String
-  email     String?          @unique
-  phone     String?          @unique
-  address   String
-  img       String?
-  bloodType String
-  sex       UserSex
-  createdAt DateTime         @default(now())
-  subjects  TeacherSubject[]
-  lessons   Lesson[]
-  classes   TeacherClass[]
-  birthday  DateTime
-  Class     Class[]
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  clerkId     String           @unique
+  username    String           @unique
+  name        String
+  surname     String
+  email       String?          @unique
+  phone       String?          @unique
+  address     String
+  img         String?
+  description String?
+  bloodType   String
+  sex         UserSex
+  createdAt   DateTime         @default(now())
+  subjects    TeacherSubject[]
+  lessons     Lesson[]
+  classes     TeacherClass[]
+  birthday    DateTime
+  Class       Class[]
 }
 
 model Parent {
@@ -102,7 +103,7 @@ model Class {
 model Subject {
   id          String           @id @default(auto()) @map("_id") @db.ObjectId
   name        String           @unique
-  description String
+  description String?
   teachers    TeacherSubject[]
   lessons     Lesson[]
   createdAt   DateTime         @default(now())
@@ -140,7 +141,7 @@ model Lesson {
   day         Day
   startTime   DateTime
   endTime     DateTime
-  description String
+  description String?
   subjectId   String       @db.ObjectId
   subject     Subject      @relation(fields: [subjectId], references: [id])
   classId     String       @db.ObjectId
@@ -168,10 +169,10 @@ model Exam {
 }
 
 model Assignment {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
   title     String
-  startDate DateTime
-  dueDate   DateTime
+  startDate DateTime?
+  dueDate   DateTime?
 
   lessonId  String   @db.ObjectId
   lesson    Lesson   @relation(fields: [lessonId], references: [id])
@@ -207,11 +208,11 @@ model Attendance {
 }
 
 model Event {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
   title       String
-  description String
-  startTime   DateTime
-  endTime     DateTime
+  description String?
+  startTime   DateTime?
+  endTime     DateTime?
 
   classId   String?  @db.ObjectId
   class     Class?   @relation(fields: [classId], references: [id])
@@ -222,7 +223,7 @@ model Event {
 model Announcement {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   title       String
-  description String
+  description String?
   date        DateTime
   classId     String?  @db.ObjectId
   class       Class?   @relation(fields: [classId], references: [id])

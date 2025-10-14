@@ -14,6 +14,7 @@ export type FormContainerProps = {
     | "exam"
     | "assignment"
     | "result"
+    | "grade"
     | "attendance"
     | "event"
     | "announcement"

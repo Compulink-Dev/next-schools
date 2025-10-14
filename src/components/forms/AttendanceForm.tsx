@@ -12,12 +12,17 @@ import { useFormState } from "react-dom";
 import { Dispatch, SetStateAction, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-
-const formatDateForInput = (dateString: any) => {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  return date.toISOString().slice(0, 16); // Format to YYYY-MM-DDTHH:MM
-};
+import { Controller } from "react-hook-form";
+import { DateTimePicker } from "../DateTimePicker";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const AttendanceForm = ({
   type,
@@ -26,7 +31,7 @@ const AttendanceForm = ({
   relatedData,
 }: {
   type: "create" | "update";
-  data?: AttendanceSchema; // Specify type for data
+  data?: AttendanceSchema;
   setOpen: Dispatch<SetStateAction<boolean>>;
   relatedData?: {
     lessons: { id: string; name: string }[];
@@ -37,8 +42,17 @@ const AttendanceForm = ({
     register,
     handleSubmit,
     formState: { errors },
+    control,
+    setValue,
   } = useForm<AttendanceSchema>({
     resolver: zodResolver(attendanceSchema),
+    defaultValues: {
+      id: data?.id || "",
+      studentId: data?.studentId || "",
+      lessonId: data?.lessonId || "",
+      date: data?.date ? new Date(data.date) : new Date(),
+      present: data?.present || false,
+    },
   });
 
   const [state, formAction] = useFormState(
@@ -52,23 +66,22 @@ const AttendanceForm = ({
   const router = useRouter();
 
   const onSubmit = handleSubmit(async (formData) => {
-    const response = (await formAction(formData)) as unknown; // Type as unknown first
+    const response = (await formAction(formData)) as unknown;
 
-    // Type guard to check if response is an object
     if (
       typeof response === "object" &&
       response !== null &&
       "success" in response
     ) {
-      const typedResponse = response as { success: boolean; error: boolean }; // Cast to expected type
+      const typedResponse = response as { success: boolean; error: boolean };
 
-      console.log("Update Response:", typedResponse); // Log for debugging
+      console.log("Update Response:", typedResponse);
 
       if (typedResponse.success) {
         setOpen(false);
         router.refresh();
       } else {
-        toast.error("Failed to update attendance."); // Show error toast
+        toast.error("Failed to update attendance.");
       }
     }
   });
@@ -83,6 +96,12 @@ const AttendanceForm = ({
     }
   }, [state.success, router, type, setOpen]);
 
+  // Helper function to handle date changes safely
+  const handleDateChange = (date: Date | undefined) => {
+    const safeDate = date || new Date();
+    setValue("date", safeDate);
+  };
+
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>
       <h1 className="text-xl font-semibold">
@@ -94,26 +113,36 @@ const AttendanceForm = ({
           <InputField
             label="Id"
             name="id"
-            defaultValue={data?.id !== undefined ? String(data.id) : ""} // Convert to string
             register={register}
             error={errors?.id}
             hidden
           />
         )}
 
+        {/* Student Select */}
         <div className="flex flex-col gap-2 w-full md:w-1/4">
           <label className="text-xs text-gray-500">Student</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("studentId")}
-            defaultValue={data?.studentId}
-          >
-            {relatedData?.students.map((student) => (
-              <option value={student.id} key={student.id}>
-                {student.name} {student.surname}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="studentId"
+            render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select student" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Students</SelectLabel>
+                    {relatedData?.students.map((student) => (
+                      <SelectItem key={student.id} value={student.id}>
+                        {student.name} {student.surname}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            )}
+          />
           {errors.studentId?.message && (
             <p className="text-xs text-red-400">
               {errors.studentId.message.toString()}
@@ -121,19 +150,30 @@ const AttendanceForm = ({
           )}
         </div>
 
+        {/* Lesson Select */}
         <div className="flex flex-col gap-2 w-full md:w-1/4">
           <label className="text-xs text-gray-500">Lesson</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("lessonId")}
-            defaultValue={data?.lessonId}
-          >
-            {relatedData?.lessons.map((lesson) => (
-              <option value={lesson.id} key={lesson.id}>
-                {lesson.name}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="lessonId"
+            render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select lesson" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Lessons</SelectLabel>
+                    {relatedData?.lessons.map((lesson) => (
+                      <SelectItem key={lesson.id} value={lesson.id}>
+                        {lesson.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            )}
+          />
           {errors.lessonId?.message && (
             <p className="text-xs text-red-400">
               {errors.lessonId.message.toString()}
@@ -141,16 +181,25 @@ const AttendanceForm = ({
           )}
         </div>
 
-        <InputField
-          label="Date"
-          type="datetime-local"
+        {/* Date DateTimePicker */}
+        <Controller
+          control={control}
           name="date"
-          defaultValue={data?.date ? formatDateForInput(data.date) : ""}
-          register={register}
-          error={errors?.date}
+          render={({ field }) => (
+            <DateTimePicker
+              label="Date"
+              value={field.value}
+              onChange={(date) => {
+                field.onChange(date);
+                handleDateChange(date);
+              }}
+              error={errors.date?.message?.toString()}
+            />
+          )}
         />
 
-        <div className="flex items-center gap-2">
+        {/* Present Checkbox */}
+        <div className="flex items-center gap-3 w-full md:w-1/4">
           <label className="text-xs text-gray-500">Present</label>
           <input
             type="checkbox"

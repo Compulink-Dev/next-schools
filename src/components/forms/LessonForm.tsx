@@ -1,3 +1,4 @@
+// components/forms/LessonForm.tsx - FIXED VERSION
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,14 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Controller } from "react-hook-form";
-
-// Function to format ISO 8601 date-time string for datetime-local input
-const formatDateTimeForInput = (dateTimeString: string | undefined): string => {
-  if (!dateTimeString) return "";
-  const date = new Date(dateTimeString);
-  if (isNaN(date.getTime())) return ""; // Check for invalid date
-  return date.toISOString().slice(0, 16); // Format to YYYY-MM-DDTHH:MM
-};
+import { DateTimePicker } from "../DateTimePicker";
 
 const LessonForm = ({
   type,
@@ -43,9 +37,20 @@ const LessonForm = ({
     register,
     handleSubmit,
     formState: { errors },
-    control, // Add control for Controller
+    control,
+    setValue,
   } = useForm<LessonSchema>({
     resolver: zodResolver(lessonSchema),
+    defaultValues: {
+      name: data?.name || "",
+      day: data?.day || "",
+      subjectId: data?.subjectId || "",
+      classId: data?.classId || "",
+      teacherId: data?.teacherId || "",
+      id: data?.id || "",
+      startTime: data?.startTime ? new Date(data.startTime) : new Date(), // Provide default Date
+      endTime: data?.endTime ? new Date(data.endTime) : new Date(), // Provide default Date
+    },
   });
 
   const [state, formAction] = useFormState(
@@ -57,8 +62,18 @@ const LessonForm = ({
   );
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
+
   const onSubmit = handleSubmit(async (formData) => {
-    const response = (await formAction(formData)) as unknown;
+    console.log("Form data being submitted:", formData);
+
+    // Ensure dates are valid before submission
+    const submissionData = {
+      ...formData,
+      startTime: formData.startTime || new Date(),
+      endTime: formData.endTime || new Date(),
+    };
+
+    const response = (await formAction(submissionData)) as unknown;
   });
 
   useEffect(() => {
@@ -74,10 +89,17 @@ const LessonForm = ({
   }, [state, router, setOpen]);
 
   const { subjects, classes, teachers } = relatedData;
-
   const days = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"];
-
   const isSubmitting = state === null;
+
+  // Helper function to handle date changes safely
+  const handleDateChange = (
+    fieldName: "startTime" | "endTime",
+    date: Date | undefined
+  ) => {
+    const safeDate = date || new Date(); // Provide fallback date
+    setValue(fieldName, safeDate);
+  };
 
   return (
     <form
@@ -96,7 +118,6 @@ const LessonForm = ({
         <InputField
           label="Lesson name"
           name="name"
-          defaultValue={data?.name}
           register={register}
           error={errors?.name}
         />
@@ -107,7 +128,6 @@ const LessonForm = ({
           <Controller
             control={control}
             name="day"
-            defaultValue={data?.day || ""}
             render={({ field }) => (
               <Select onValueChange={field.onChange} value={field.value}>
                 <SelectTrigger className="w-full">
@@ -133,32 +153,44 @@ const LessonForm = ({
           )}
         </div>
 
-        <InputField
-          label="Start Date"
+        {/* Start Time DateTimePicker */}
+        <Controller
+          control={control}
           name="startTime"
-          type="datetime-local"
-          defaultValue={
-            data?.startTime ? formatDateTimeForInput(data.startTime) : ""
-          }
-          register={register}
-          error={errors?.startTime}
+          render={({ field }) => (
+            <DateTimePicker
+              label="Start Time"
+              value={field.value}
+              onChange={(date) => {
+                field.onChange(date);
+                handleDateChange("startTime", date);
+              }}
+              error={errors.startTime?.message?.toString()}
+            />
+          )}
         />
-        <InputField
-          label="End Date"
+
+        {/* End Time DateTimePicker */}
+        <Controller
+          control={control}
           name="endTime"
-          type="datetime-local"
-          defaultValue={
-            data?.endTime ? formatDateTimeForInput(data.endTime) : ""
-          }
-          register={register}
-          error={errors?.endTime}
+          render={({ field }) => (
+            <DateTimePicker
+              label="End Time"
+              value={field.value}
+              onChange={(date) => {
+                field.onChange(date);
+                handleDateChange("endTime", date);
+              }}
+              error={errors.endTime?.message?.toString()}
+            />
+          )}
         />
 
         {data && (
           <InputField
             label="Id"
             name="id"
-            defaultValue={data?.id}
             register={register}
             error={errors?.id}
             hidden
@@ -171,7 +203,6 @@ const LessonForm = ({
           <Controller
             control={control}
             name="subjectId"
-            defaultValue={data?.subjectId || ""}
             render={({ field }) => (
               <Select onValueChange={field.onChange} value={field.value}>
                 <SelectTrigger className="w-full">
@@ -180,11 +211,8 @@ const LessonForm = ({
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Subjects</SelectLabel>
-                    {subjects.map((subject: { id: number; name: string }) => (
-                      <SelectItem
-                        key={subject.id}
-                        value={subject.id.toString()}
-                      >
+                    {subjects.map((subject: { id: string; name: string }) => (
+                      <SelectItem key={subject.id} value={subject.id}>
                         {subject.name}
                       </SelectItem>
                     ))}
@@ -206,7 +234,6 @@ const LessonForm = ({
           <Controller
             control={control}
             name="classId"
-            defaultValue={data?.classId || ""}
             render={({ field }) => (
               <Select onValueChange={field.onChange} value={field.value}>
                 <SelectTrigger className="w-full">
@@ -215,8 +242,8 @@ const LessonForm = ({
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Classes</SelectLabel>
-                    {classes.map((clazz: { id: number; name: string }) => (
-                      <SelectItem key={clazz.id} value={clazz.id.toString()}>
+                    {classes.map((clazz: { id: string; name: string }) => (
+                      <SelectItem key={clazz.id} value={clazz.id}>
                         {clazz.name}
                       </SelectItem>
                     ))}
@@ -238,7 +265,6 @@ const LessonForm = ({
           <Controller
             control={control}
             name="teacherId"
-            defaultValue={data?.teacherId || ""}
             render={({ field }) => (
               <Select onValueChange={field.onChange} value={field.value}>
                 <SelectTrigger className="w-full">

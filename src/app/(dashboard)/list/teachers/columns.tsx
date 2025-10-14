@@ -17,11 +17,16 @@ import DeleteButton from "@/components/DeleteButton";
 import { toast } from "sonner";
 
 export type TeacherWithRelations = Teacher & {
-  subjects: (TeacherSubject & { subject: Subject })[];
-  classes: (TeacherClass & { class: Class })[];
+  subjects: (TeacherSubject & { subject: Subject | null })[];
+  classes: (TeacherClass & { class: Class | null })[];
 };
 
-export const columns: ColumnDef<TeacherWithRelations>[] = [
+export type TeacherForTable = Teacher & {
+  subjects: (TeacherSubject & { subject: Subject | null })[];
+  classes: (TeacherClass & { class: Class | null })[];
+};
+
+export const columns: ColumnDef<TeacherForTable>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -74,12 +79,19 @@ export const columns: ColumnDef<TeacherWithRelations>[] = [
     accessorKey: "subjects",
     header: "Subjects",
     cell: ({ row }) =>
-      row.original.subjects.map((s) => s.subject.name).join(", "),
+      row.original.subjects
+        .map((s) => s.subject?.name || "Unknown Subject")
+        .filter(Boolean)
+        .join(", "),
   },
   {
     accessorKey: "classes",
     header: "Classes",
-    cell: ({ row }) => row.original.classes.map((c) => c.class.name).join(", "),
+    cell: ({ row }) =>
+      row.original.classes
+        .map((c) => c.class?.name || "Unknown Class")
+        .filter(Boolean)
+        .join(", "),
   },
   {
     accessorKey: "phone",
@@ -94,7 +106,6 @@ export const columns: ColumnDef<TeacherWithRelations>[] = [
     cell: ({ row }) => {
       const teacher = row.original;
       const handleDelete = async (id: string) => {
-        // Call your API to delete the teacher
         try {
           const response = await fetch(`/api/teachers/${id}`, {
             method: "DELETE",
@@ -104,8 +115,7 @@ export const columns: ColumnDef<TeacherWithRelations>[] = [
             throw new Error("Failed to delete teacher");
           }
 
-          // Refresh the page or update the data
-          toast("Teacher deleted successufully");
+          toast("Teacher deleted successfully");
           window.location.reload();
         } catch (error) {
           console.error("Delete error:", error);

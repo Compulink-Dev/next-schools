@@ -239,10 +239,9 @@ const SingleAttendancePage = async ({
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Recorded</span>
               <span className="font-semibold">
-                {new Intl.DateTimeFormat("en-US", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                }).format(attendance.createdAt)}
+                {attendance.date
+                  ? new Intl.DateTimeFormat("en-US").format(attendance.date)
+                  : "N/A"}
               </span>
             </div>
           </div>

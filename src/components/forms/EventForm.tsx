@@ -9,12 +9,17 @@ import { useFormState } from "react-dom";
 import { Dispatch, SetStateAction, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-
-const formatDateForInput = (dateString: any) => {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  return date.toISOString().slice(0, 16); // Format to YYYY-MM-DDTHH:MM
-};
+import { Controller } from "react-hook-form";
+import { DateTimePicker } from "../DateTimePicker";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const EventForm = ({
   type,
@@ -25,14 +30,26 @@ const EventForm = ({
   type: "create" | "update";
   data?: any;
   setOpen: Dispatch<SetStateAction<boolean>>;
-relatedData?: { classes: { id: string; name: string }[] };
+  relatedData?: { classes: { id: string; name: string }[] };
 }) => {
   const {
     register,
     handleSubmit,
     formState: { errors },
+    control,
+    setValue,
   } = useForm<EventSchema>({
     resolver: zodResolver(eventSchema),
+    defaultValues: {
+      id: data?.id || "",
+      title: data?.title || "",
+      description: data?.description || "",
+      startTime: data?.startTime ? new Date(data.startTime) : new Date(),
+      endTime: data?.endTime
+        ? new Date(data.endTime)
+        : new Date(Date.now() + 2 * 60 * 60 * 1000), // Default 2 hours later
+      classId: data?.classId || "",
+    },
   });
 
   const [state, formAction] = useFormState(
@@ -56,7 +73,23 @@ relatedData?: { classes: { id: string; name: string }[] };
       router.refresh();
     }
   }, [state, router, type, setOpen]);
-  console.log("sate", state);
+
+  console.log("state", state);
+
+  // Helper functions to handle date changes safely
+  const handleStartTimeChange = (date: Date | undefined) => {
+    const safeDate = date || new Date();
+    setValue("startTime", safeDate);
+
+    // If end time is before start time, adjust end time
+    const currentEndTime = new Date(safeDate.getTime() + 2 * 60 * 60 * 1000); // 2 hours later
+    setValue("endTime", currentEndTime);
+  };
+
+  const handleEndTimeChange = (date: Date | undefined) => {
+    const safeDate = date || new Date(Date.now() + 2 * 60 * 60 * 1000);
+    setValue("endTime", safeDate);
+  };
 
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>
@@ -69,7 +102,6 @@ relatedData?: { classes: { id: string; name: string }[] };
           <InputField
             label="Id"
             name="id"
-            defaultValue={data?.id}
             register={register}
             error={errors?.id}
             hidden
@@ -79,45 +111,71 @@ relatedData?: { classes: { id: string; name: string }[] };
         <InputField
           label="Title"
           name="title"
-          defaultValue={data?.title}
           register={register}
           error={errors?.title}
         />
 
-        <InputField
-          label="Start Time"
-          type="datetime-local"
+        {/* Start Time DateTimePicker */}
+        <Controller
+          control={control}
           name="startTime"
-          defaultValue={
-            data?.startTime ? formatDateForInput(data.startTime) : ""
-          }
-          register={register}
-          error={errors?.startTime}
+          render={({ field }) => (
+            <DateTimePicker
+              label="Start Time"
+              value={field.value}
+              onChange={(date) => {
+                field.onChange(date);
+                handleStartTimeChange(date);
+              }}
+              error={errors.startTime?.message?.toString()}
+            />
+          )}
         />
 
-        <InputField
-          label="End Time"
-          type="datetime-local"
+        {/* End Time DateTimePicker */}
+        <Controller
+          control={control}
           name="endTime"
-          defaultValue={data?.endTime ? formatDateForInput(data.endTime) : ""}
-          register={register}
-          error={errors?.endTime}
+          render={({ field }) => (
+            <DateTimePicker
+              label="End Time"
+              value={field.value}
+              onChange={(date) => {
+                field.onChange(date);
+                handleEndTimeChange(date);
+              }}
+              error={errors.endTime?.message?.toString()}
+            />
+          )}
         />
 
+        {/* Class Select */}
         <div className="flex flex-col gap-2 w-full md:w-1/4">
           <label className="text-xs text-gray-500">Class</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("classId")}
-            defaultValue={data?.classId}
-          >
-            <option value="">All Classes</option> {/* Option for no class */}
-            {relatedData?.classes.map((cls) => (
-              <option value={cls.id} key={cls.id}>
-                {cls.name}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="classId"
+            render={({ field }) => (
+              <Select
+                onValueChange={field.onChange}
+                value={field.value || undefined}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select class" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Classes</SelectLabel>
+                    {relatedData?.classes.map((cls) => (
+                      <SelectItem value={cls.id} key={cls.id}>
+                        {cls.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            )}
+          />
           {errors.classId?.message && (
             <p className="text-xs text-red-400">
               {errors.classId.message.toString()}
@@ -125,21 +183,40 @@ relatedData?: { classes: { id: string; name: string }[] };
           )}
         </div>
 
-        {/* Move description to bottom */}
-        <InputField
-          label="Description"
-          name="description"
-          defaultValue={data?.description}
-          register={register}
-          error={errors?.description}
-        />
+        {/* Description */}
+        <div className="flex flex-col gap-2 w-full">
+          <label className="text-xs text-gray-500">Description</label>
+          <textarea
+            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full min-h-[100px]"
+            {...register("description")}
+            defaultValue={data?.description}
+            placeholder="Enter event details..."
+          />
+          {errors.description?.message && (
+            <p className="text-xs text-red-400">
+              {errors.description.message.toString()}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-blue-50 p-4 rounded-md">
+        <h3 className="text-sm font-medium text-blue-800 mb-2">
+          Event Information
+        </h3>
+        <ul className="text-xs text-blue-700 space-y-1">
+          <li>• Events can be assigned to specific classes or all classes</li>
+          <li>• Start and end times define the event duration</li>
+          <li>• Events will appear in the calendar view</li>
+          <li>• Use clear descriptions to explain the event purpose</li>
+        </ul>
       </div>
 
       {state.error && (
         <span className="text-red-500">Something went wrong!</span>
       )}
-      <button className="bg-blue-400 text-white p-2 rounded-md w-full mt-4">
-        {type === "create" ? "Create" : "Update"}
+      <button className="bg-blue-400 hover:bg-blue-500 text-white p-2 rounded-md w-full mt-4 transition-colors">
+        {type === "create" ? "Create Event" : "Update Event"}
       </button>
     </form>
   );

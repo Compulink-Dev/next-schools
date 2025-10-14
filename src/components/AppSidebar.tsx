@@ -90,6 +90,12 @@ const menuSections: MenuSection[] = [
       },
       {
         icon: School,
+        label: "Grades",
+        href: "/list/grades",
+        visible: ["admin"],
+      },
+      {
+        icon: School,
         label: "Classes",
         href: "/list/classes",
         visible: ["admin", "teacher"],

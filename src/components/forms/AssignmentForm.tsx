@@ -11,15 +11,8 @@ import { createAssignment, updateAssignment } from "@/lib/actions";
 import { Dispatch, SetStateAction } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-
-const formatDateForInput = (dateString: string) => {
-  const date = new Date(dateString);
-  const offset = date.getTimezoneOffset() * 60000;
-  const localISOTime = new Date(date.getTime() - offset)
-    .toISOString()
-    .slice(0, 16); // Format: YYYY-MM-DDTHH:MM
-  return localISOTime;
-};
+import { Controller } from "react-hook-form";
+import { DateTimePicker } from "../DateTimePicker";
 
 const AssignmentForm = ({
   type,
@@ -36,13 +29,17 @@ const AssignmentForm = ({
     register,
     handleSubmit,
     formState: { errors },
+    control,
+    setValue,
   } = useForm<AssignmentSchema>({
     resolver: zodResolver(assignmentSchema),
     defaultValues: {
       id: data?.id?.toString() || "",
       title: data?.title || "",
-      startDate: data?.startDate ? new Date(data.startDate) : undefined,
-      dueDate: data?.dueDate ? new Date(data.dueDate) : undefined,
+      startDate: data?.startDate ? new Date(data.startDate) : new Date(),
+      dueDate: data?.dueDate
+        ? new Date(data.dueDate)
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       lessonId: data?.lessonId?.toString() || "",
     },
   });
@@ -53,8 +50,8 @@ const AssignmentForm = ({
     try {
       const commonPayload = {
         title: formData.title,
-        startDate: new Date(formData.startDate),
-        dueDate: new Date(formData.dueDate),
+        startDate: formData.startDate,
+        dueDate: formData.dueDate,
         lessonId: formData.lessonId,
       };
 
@@ -93,6 +90,15 @@ const AssignmentForm = ({
 
   const { lessons = [] } = relatedData || {};
 
+  // Helper function to handle date changes safely
+  const handleDateChange = (
+    fieldName: "startDate" | "dueDate",
+    date: Date | undefined
+  ) => {
+    const safeDate = date || new Date();
+    setValue(fieldName, safeDate);
+  };
+
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>
       <h1 className="text-xl font-semibold">
@@ -102,13 +108,15 @@ const AssignmentForm = ({
       </h1>
 
       <div className="flex justify-between flex-wrap gap-4">
-        <InputField
-          label="Assignment ID (Hidden)"
-          name="id"
-          register={register}
-          error={errors?.id}
-          hidden
-        />
+        {data && (
+          <InputField
+            label="Assignment ID (Hidden)"
+            name="id"
+            register={register}
+            error={errors?.id}
+            hidden
+          />
+        )}
 
         <InputField
           label="Assignment Title"
@@ -117,24 +125,43 @@ const AssignmentForm = ({
           error={errors?.title}
         />
 
-        <InputField
-          label="Start Date"
-          type="datetime-local"
+        {/* Start Date DateTimePicker */}
+        <Controller
+          control={control}
           name="startDate"
-          register={register}
-          error={errors?.startDate}
+          render={({ field }) => (
+            <DateTimePicker
+              label="Start Date"
+              value={field.value}
+              onChange={(date) => {
+                field.onChange(date);
+                handleDateChange("startDate", date);
+              }}
+              error={errors.startDate?.message?.toString()}
+            />
+          )}
         />
 
-        <InputField
-          label="Due Date"
-          type="datetime-local"
+        {/* Due Date DateTimePicker */}
+        <Controller
+          control={control}
           name="dueDate"
-          register={register}
-          error={errors?.dueDate}
+          render={({ field }) => (
+            <DateTimePicker
+              label="Due Date"
+              value={field.value}
+              onChange={(date) => {
+                field.onChange(date);
+                handleDateChange("dueDate", date);
+              }}
+              error={errors.dueDate?.message?.toString()}
+            />
+          )}
         />
 
+        {/* Simple Lesson Select */}
         <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Lesson ID</label>
+          <label className="text-xs text-gray-500">Lesson</label>
           <select
             className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
             {...register("lessonId")}
@@ -157,8 +184,21 @@ const AssignmentForm = ({
         </div>
       </div>
 
-      <button className="bg-blue-400 text-white p-2 rounded-md">
-        {type === "create" ? "Create" : "Update"}
+      <div className="bg-blue-50 p-4 rounded-md">
+        <h3 className="text-sm font-medium text-blue-800 mb-2">
+          Assignment Information
+        </h3>
+        <ul className="text-xs text-blue-700 space-y-1">
+          <li>
+            • Start Date: When the assignment becomes available to students
+          </li>
+          <li>• Due Date: When the assignment must be submitted</li>
+          <li>• Students will see this assignment in their dashboard</li>
+        </ul>
+      </div>
+
+      <button className="bg-blue-400 hover:bg-blue-500 text-white p-2 rounded-md transition-colors">
+        {type === "create" ? "Create Assignment" : "Update Assignment"}
       </button>
     </form>
   );

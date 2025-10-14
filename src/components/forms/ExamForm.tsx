@@ -8,20 +8,16 @@ import { createExam, updateExam } from "@/lib/actions";
 import { Dispatch, SetStateAction, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { Controller } from "react-hook-form";
+import { DateTimePicker } from "../DateTimePicker";
 
-// Form input types (strings only)
+// Form input types
 type ExamFormValues = {
   id?: string;
   title: string;
-  startTime: string;
-  endTime: string;
+  startTime: Date;
+  endTime: Date;
   lessonId: string;
-};
-
-const formatDateForInput = (dateString: any) => {
-  const date = new Date(dateString);
-  const offset = date.getTimezoneOffset() * 60000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 };
 
 const ExamForm = ({
@@ -33,19 +29,23 @@ const ExamForm = ({
   type: "create" | "update";
   data?: Partial<ExamSchema>;
   setOpen: Dispatch<SetStateAction<boolean>>;
-relatedData?: { lessons: { id: string; name: string }[] };
+  relatedData?: { lessons: { id: string; name: string }[] };
 }) => {
   const {
     register,
     handleSubmit,
     formState: { errors },
+    control,
+    setValue,
   } = useForm<ExamFormValues>({
     resolver: zodResolver(examSchema),
     defaultValues: {
       id: data?.id?.toString() || "",
       title: data?.title || "",
-      startTime: data?.startTime ? formatDateForInput(data.startTime) : "",
-      endTime: data?.endTime ? formatDateForInput(data.endTime) : "",
+      startTime: data?.startTime ? new Date(data.startTime) : new Date(),
+      endTime: data?.endTime
+        ? new Date(data.endTime)
+        : new Date(Date.now() + 2 * 60 * 60 * 1000), // Default 2 hours later
       lessonId: data?.lessonId?.toString() || "",
     },
   });
@@ -56,15 +56,15 @@ relatedData?: { lessons: { id: string; name: string }[] };
     console.log("🧾 Form mounted for:", type);
   }, [type]);
 
-const onSubmit = handleSubmit(
+  const onSubmit = handleSubmit(
     async (formData) => {
       console.log("📤 Form submitted with values:", formData);
 
       try {
         const payload = {
           title: formData.title,
-          startTime: new Date(formData.startTime),
-          endTime: new Date(formData.endTime),
+          startTime: formData.startTime,
+          endTime: formData.endTime,
           lessonId: formData.lessonId,
         };
 
@@ -78,7 +78,7 @@ const onSubmit = handleSubmit(
             console.error("❌ No ID provided in formData.");
             return;
           }
-const updatePayload = { ...payload, id: formData.id };
+          const updatePayload = { ...payload, id: formData.id };
           console.log("🛠️ Sending update request with payload:", updatePayload);
           response = await updateExam(updatePayload);
         }
@@ -111,6 +111,15 @@ const updatePayload = { ...payload, id: formData.id };
 
   const { lessons = [] } = relatedData || {};
 
+  // Helper function to handle date changes safely
+  const handleDateChange = (
+    fieldName: "startTime" | "endTime",
+    date: Date | undefined
+  ) => {
+    const safeDate = date || new Date();
+    setValue(fieldName, safeDate);
+  };
+
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>
       <h1 className="text-xl font-semibold">
@@ -125,29 +134,49 @@ const updatePayload = { ...payload, id: formData.id };
           error={errors.title}
         />
 
-        <InputField
-          label="Start Date"
+        {/* Start Time DateTimePicker */}
+        <Controller
+          control={control}
           name="startTime"
-          type="datetime-local"
-          register={register}
-          error={errors.startTime}
+          render={({ field }) => (
+            <DateTimePicker
+              label="Start Time"
+              value={field.value}
+              onChange={(date) => {
+                field.onChange(date);
+                handleDateChange("startTime", date);
+              }}
+              error={errors.startTime?.message?.toString()}
+            />
+          )}
         />
 
-        <InputField
-          label="End Date"
+        {/* End Time DateTimePicker */}
+        <Controller
+          control={control}
           name="endTime"
-          type="datetime-local"
-          register={register}
-          error={errors.endTime}
+          render={({ field }) => (
+            <DateTimePicker
+              label="End Time"
+              value={field.value}
+              onChange={(date) => {
+                field.onChange(date);
+                handleDateChange("endTime", date);
+              }}
+              error={errors.endTime?.message?.toString()}
+            />
+          )}
         />
 
-        <InputField
-          label="ID (hidden)"
-          name="id"
-          register={register}
-          error={errors.id}
-          hidden
-        />
+        {data && (
+          <InputField
+            label="ID (hidden)"
+            name="id"
+            register={register}
+            error={errors.id}
+            hidden
+          />
+        )}
 
         <div className="flex flex-col gap-2 w-full md:w-1/4">
           <label className="text-xs text-gray-500">Lesson</label>

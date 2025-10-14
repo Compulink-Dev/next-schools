@@ -21,6 +21,7 @@ import {
 import prisma from "./prisma";
 import { clerkClient } from "@clerk/nextjs/server";
 import { Day } from "@prisma/client"; // Import the Day enum
+import { gradeSchema, GradeSchema } from "../../lib/formValidationSchemas";
 
 type CurrentState = { success: boolean; error: boolean };
 
@@ -1216,5 +1217,172 @@ export const deleteFee = async (_: any, data: FormData) => {
   } catch (err) {
     console.error("Error deleting fee:", err);
     return { success: false, error: true };
+  }
+};
+
+
+export const createGrade = async (prevState: any, formData: FormData) => {
+  // Extract data from FormData
+  const rawData = {
+    level: formData.get('level') as string,
+    description: formData.get('description') as string,
+  };
+
+  const validatedFields = gradeSchema.safeParse(rawData);
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      error: true,
+      message: 'Invalid fields: ' + validatedFields.error.errors.map(e => e.message).join(', '),
+    };
+  }
+
+  const { level, description } = validatedFields.data;
+
+  try {
+    // Check if grade level already exists
+    const existingGrade = await prisma.grade.findUnique({
+      where: { level: Number(level) },
+    });
+
+    if (existingGrade) {
+      return {
+        success: false,
+        error: true,
+        message: `Grade ${level} already exists!`,
+      };
+    }
+
+    await prisma.grade.create({
+      data: {
+        level: Number(level),
+        description,
+      },
+    });
+
+    revalidatePath('/list/grades');
+    return {
+      success: true,
+      error: false,
+      message: 'Grade created successfully!',
+    };
+  } catch (error) {
+    console.error('Error creating grade:', error);
+    return {
+      success: false,
+      error: true,
+      message: 'Failed to create grade. Please try again.',
+    };
+  }
+};
+
+export const updateGrade = async (prevState: any, formData: FormData) => {
+  // Extract data from FormData
+  const rawData = {
+    id: formData.get('id') as string,
+    level: formData.get('level') as string,
+    description: formData.get('description') as string,
+  };
+
+  const validatedFields = gradeSchema.safeParse(rawData);
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      error: true,
+      message: 'Invalid fields: ' + validatedFields.error.errors.map(e => e.message).join(', '),
+    };
+  }
+
+  const { id, level, description } = validatedFields.data;
+
+  try {
+    // Check if another grade with the same level exists (excluding current grade)
+    const existingGrade = await prisma.grade.findFirst({
+      where: {
+        level: Number(level),
+        NOT: { id },
+      },
+    });
+
+    if (existingGrade) {
+      return {
+        success: false,
+        error: true,
+        message: `Grade ${level} already exists!`,
+      };
+    }
+
+    await prisma.grade.update({
+      where: { id },
+      data: {
+        level: Number(level),
+        description,
+      },
+    });
+
+    revalidatePath('/list/grades');
+    return {
+      success: true,
+      error: false,
+      message: 'Grade updated successfully!',
+    };
+  } catch (error) {
+    console.error('Error updating grade:', error);
+    return {
+      success: false,
+      error: true,
+      message: 'Failed to update grade. Please try again.',
+    };
+  }
+};
+
+export const deleteGrade = async (prevState: any, formData: FormData) => {
+  const id = formData.get('id') as string;
+
+  try {
+    // Check if grade has classes or students before deleting
+    const gradeWithRelations = await prisma.grade.findUnique({
+      where: { id },
+      include: {
+        classes: true,
+        students: true,
+      },
+    });
+
+    if (!gradeWithRelations) {
+      return {
+        success: false,
+        error: true,
+        message: 'Grade not found!',
+      };
+    }
+
+    if (gradeWithRelations.classes.length > 0 || gradeWithRelations.students.length > 0) {
+      return {
+        success: false,
+        error: true,
+        message: 'Cannot delete grade with existing classes or students. Please reassign them first.',
+      };
+    }
+
+    await prisma.grade.delete({
+      where: { id },
+    });
+
+    revalidatePath('/list/grades');
+    return {
+      success: true,
+      error: false,
+      message: 'Grade deleted successfully!',
+    };
+  } catch (error) {
+    console.error('Error deleting grade:', error);
+    return {
+      success: false,
+      error: true,
+      message: 'Failed to delete grade. Please try again.',
+    };
   }
 };
