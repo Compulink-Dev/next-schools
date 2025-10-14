@@ -19,12 +19,14 @@ const SingleStudentPage = async ({
   const { sessionClaims } = auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
 
-  const student = await prisma.student.findUnique({
+  const student:
+    | (Student & {
+        class: Class & { _count: { lessons: number } };
+      })
+    | null = await prisma.student.findUnique({
     where: { id },
     include: {
       class: { include: { _count: { select: { lessons: true } } } },
-      parent: true,
-      grade: true,
     },
   });
 
@@ -39,7 +41,7 @@ const SingleStudentPage = async ({
         {/* TOP */}
         <div className="flex flex-col lg:flex-row gap-4">
           {/* USER INFO CARD */}
-          <div className="bg-lamaSkyLight py-6 px-4 rounded-md flex-1 flex gap-4">
+          <div className="bg-lamaSky py-6 px-4 rounded-md flex-1 flex gap-4">
             <div className="w-1/3">
               <Image
                 src={student.img || "/noAvatar.png"}

@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import FormContainer from "@/components/FormContainer";
 
 export type AnnouncementWithRelations = Announcement & {
-  class?: Class;
+  class?: Class | null;
 };
 
 export const columns: ColumnDef<AnnouncementWithRelations>[] = [
@@ -135,11 +135,6 @@ export const columns: ColumnDef<AnnouncementWithRelations>[] = [
               <Eye size={16} />
             </Button>
           </Link>
-          <FormContainer
-            table="announcement"
-            type="update"
-            data={announcement}
-          />
           <DeleteButton id={announcement.id} onDelete={handleDelete} />
         </div>
       );

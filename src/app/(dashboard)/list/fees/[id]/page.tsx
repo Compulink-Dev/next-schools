@@ -7,8 +7,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 type FeeWithRelations = Fee & {
-  class?: Class;
-  student?: Student;
+  class?: Class | null;
+  student?: Student | null;
 };
 
 const SingleFeePage = async ({

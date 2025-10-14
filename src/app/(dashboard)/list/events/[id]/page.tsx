@@ -7,7 +7,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 type EventWithRelations = Event & {
-  class?: Class;
+  class?: Class | null;
 };
 
 const SingleEventPage = async ({

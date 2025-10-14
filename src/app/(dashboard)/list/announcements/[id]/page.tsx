@@ -7,7 +7,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 type AnnouncementWithRelations = Announcement & {
-  class?: Class;
+  class?: Class | null;
 };
 
 const SingleAnnouncementPage = async ({

@@ -117,7 +117,7 @@ export const columns: ColumnDef<StudentWithRelations>[] = [
 
       return (
         <div className="flex items-center gap-2">
-          <Link href={`/students/${student.id}`}>
+          <Link href={`/list/students/${student.id}`}>
             <Button size="icon" variant="outline" className="w-7 h-7">
               <Eye size={16} />
             </Button>

@@ -18,7 +18,7 @@ const ResultForm = ({
 }: {
   type: "create" | "update";
   data: {
-    id: number;
+    id: string;
     title: string;
     studentName: string;
     studentSurname: string;

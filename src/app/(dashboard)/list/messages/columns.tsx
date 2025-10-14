@@ -149,7 +149,6 @@ export const columns: ColumnDef<MessageList>[] = [
               <Eye size={16} />
             </Button>
           </Link>
-          <FormContainer table="message" type="update" data={message} />
           <DeleteButton id={message.id} onDelete={handleDelete} />
         </div>
       );

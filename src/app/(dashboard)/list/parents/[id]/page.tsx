@@ -39,7 +39,7 @@ const SingleParentPage = async ({
         {/* TOP */}
         <div className="flex flex-col lg:flex-row gap-4">
           {/* USER INFO CARD */}
-          <div className="bg-lamaSky py-6 px-4 rounded-md flex-1 flex gap-4">
+          <div className="bg-lamaSkyLight py-6 px-4 rounded-md flex-1 flex gap-4">
             <div className="w-2/3 flex flex-col justify-between gap-4">
               <div className="flex items-center gap-4">
                 <h1 className="text-xl font-semibold">
@@ -51,7 +51,9 @@ const SingleParentPage = async ({
               </div>
               <p className="text-sm text-gray-500">
                 {/* A brief description about the parent can be added here */}
-                Connected Students: {parent.students.map((student) => student.name).join(", ") || "No students connected"}
+                Connected Students:{" "}
+                {parent.students.map((student) => student.name).join(", ") ||
+                  "No students connected"}
               </p>
               <div className="flex items-center justify-between gap-2 flex-wrap text-xs font-medium">
                 <div className="w-full md:w-1/2 lg:w-full xl:w-1/2 flex items-center gap-2">
@@ -63,7 +65,12 @@ const SingleParentPage = async ({
                   <span>{parent.phone || "-"}</span>
                 </div>
                 <div className="w-full flex items-center gap-2">
-                  <Image src="/address.png" alt="address" width={14} height={14} />
+                  <Image
+                    src="/address.png"
+                    alt="address"
+                    width={14}
+                    height={14}
+                  />
                   <span>{parent.address || "-"}</span>
                 </div>
               </div>
@@ -81,7 +88,9 @@ const SingleParentPage = async ({
                 className="w-6 h-6"
               />
               <div className="">
-                <h1 className="text-xl font-semibold">{parent.students.length}</h1>
+                <h1 className="text-xl font-semibold">
+                  {parent.students.length}
+                </h1>
                 <span className="text-sm text-gray-400">Total Students</span>
               </div>
             </div>

@@ -8,8 +8,8 @@ import { DataTable } from "@/components/DataTable";
 import { columns } from "./columns";
 
 type FeeWithRelations = Fee & {
-  class?: Class;
-  student?: Student;
+  class?: Class | null;
+  student?: Student | null;
 };
 
 const FeesPage = async ({
@@ -109,6 +109,7 @@ const FeesPage = async ({
 
       <DataTable
         columns={columns}
+        //@ts-expect-error name and surname missing form the field
         data={fees}
         searchKey="title"
         searchPlaceholder="Search fee..."

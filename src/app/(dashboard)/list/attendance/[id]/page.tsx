@@ -242,7 +242,6 @@ const SingleAttendancePage = async ({
                 {new Intl.DateTimeFormat("en-US", {
                   dateStyle: "short",
                   timeStyle: "short",
-                  //@ts-expect-error createdAt attendance
                 }).format(attendance.createdAt)}
               </span>
             </div>

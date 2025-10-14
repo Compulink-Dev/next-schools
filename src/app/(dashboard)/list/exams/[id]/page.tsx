@@ -44,7 +44,7 @@ const SingleExamPage = async ({
       {/* TOP */}
       <div className="flex flex-col lg:flex-row gap-4">
         {/* EXAM INFO CARD */}
-        <div className="bg-lamaSky py-6 px-4 rounded-md flex-1 flex gap-4">
+        <div className="bg-lamaSkyLight py-6 px-4 rounded-md flex-1 flex gap-4">
           <div className="w-1/3">
             <div className="w-36 h-36 rounded-full bg-blue-100 flex items-center justify-center">
               <Image src="/exam.png" alt="Exam" width={64} height={64} />

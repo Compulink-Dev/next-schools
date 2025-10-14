@@ -99,7 +99,7 @@ export const columns: ColumnDef<ParentWithRelations>[] = [
 
       return (
         <div className="flex items-center gap-2">
-          <Link href={`/parents/${parent.id}`}>
+          <Link href={`/list/parents/${parent.id}`}>
             <Button size="icon" variant="outline" className="w-7 h-7">
               <Eye size={16} />
             </Button>

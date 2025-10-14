@@ -1,5 +1,4 @@
 import FormContainer from "@/components/FormContainer";
-import Pagination from "@/components/Pagination";
 import TableSearch from "@/components/TableSearch";
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
@@ -45,10 +44,12 @@ const MessageListPage = async ({
   }
 
   if (queryParams.senderType) {
+    //@ts-expect-error string is not assignable to type RecieverType
     conditions.push({ senderType: queryParams.senderType });
   }
 
   if (queryParams.receiverType) {
+    //@ts-expect-error string is not assignable to type RecieverType
     conditions.push({ receiverType: queryParams.receiverType });
   }
 

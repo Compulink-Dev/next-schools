@@ -30,7 +30,7 @@ const AssignmentForm = ({
   type: "create" | "update";
   data?: any;
   setOpen: Dispatch<SetStateAction<boolean>>;
-relatedData?: { lessons: { id: string; name: string }[] };
+  relatedData?: { lessons: { id: string; name: string }[] };
 }) => {
   const {
     register,
@@ -41,8 +41,8 @@ relatedData?: { lessons: { id: string; name: string }[] };
     defaultValues: {
       id: data?.id?.toString() || "",
       title: data?.title || "",
-      startDate: data?.startDate ? formatDateForInput(data.startDate) : "",
-      dueDate: data?.dueDate ? formatDateForInput(data.dueDate) : "",
+      startDate: data?.startDate ? new Date(data.startDate) : undefined,
+      dueDate: data?.dueDate ? new Date(data.dueDate) : undefined,
       lessonId: data?.lessonId?.toString() || "",
     },
   });
@@ -51,7 +51,7 @@ relatedData?: { lessons: { id: string; name: string }[] };
 
   const onSubmit = handleSubmit(async (formData: AssignmentSchema) => {
     try {
-const commonPayload = {
+      const commonPayload = {
         title: formData.title,
         startDate: new Date(formData.startDate),
         dueDate: new Date(formData.dueDate),
@@ -70,7 +70,7 @@ const commonPayload = {
 
         response = await updateAssignment({
           ...commonPayload,
-id: formData.id,
+          id: formData.id,
         });
       }
 

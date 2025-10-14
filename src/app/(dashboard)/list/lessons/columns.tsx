@@ -90,7 +90,6 @@ export const columns: ColumnDef<LessonWithRelations>[] = [
           </Link>
           {role === "admin" && (
             <>
-              <FormContainer table="lesson" type="update" data={lesson} />
               <DeleteButton id={lesson.id} onDelete={handleDelete} />
             </>
           )}

@@ -119,7 +119,6 @@ export const columns: ColumnDef<AssignmentWithRelations>[] = [
               <Eye size={16} />
             </Button>
           </Link>
-          <FormContainer table="assignment" type="update" data={assignment} />
           <DeleteButton id={assignment.id} onDelete={handleDelete} />
         </div>
       );

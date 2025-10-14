@@ -10,7 +10,7 @@ import { DataTable } from "@/components/DataTable";
 import { columns } from "./columns";
 
 type EventList = Event & {
-  class?: Class;
+  class?: Class | null;
 };
 
 const EventListPage = async ({
@@ -125,6 +125,7 @@ const EventListPage = async ({
       {/* LIST */}
       <DataTable
         columns={columns}
+        //@ts-expect-errors data not working properly
         data={data}
         searchKey="title"
         searchPlaceholder="Search event..."

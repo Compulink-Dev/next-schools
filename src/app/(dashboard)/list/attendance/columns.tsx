@@ -133,7 +133,7 @@ export const columns: ColumnDef<AttendanceWithRelations>[] = [
               <Eye size={16} />
             </Button>
           </Link>
-          <FormContainer table="attendance" type="update" data={attendance} />
+          {/* <FormContainer table="attendance" type="update" data={attendance} /> */}
           <DeleteButton id={attendance.id} onDelete={handleDelete} />
         </div>
       );

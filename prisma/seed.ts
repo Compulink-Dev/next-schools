@@ -59,29 +59,36 @@ async function main() {
 
   // SUBJECT
   const subjectData = [
-    { name: "Mathematics" },
-    { name: "Science" },
-    { name: "English" },
-    { name: "History" },
-    { name: "Geography" },
-    { name: "Physics" },
-    { name: "Chemistry" },
-    { name: "Biology" },
-    { name: "Computer Science" },
-    { name: "Art" },
+    { name: "Mathematics",description: "Mathematics subject" },
+    { name: "Science",description: "Science subject" },
+    { name: "English",description: "Emglish subject" },
+    { name: "History",description: "Historybject" },
+    { name: "Geography",description: "Goegraphy subject" },
+    { name: "Physics",description: "Physics subject" },
+    { name: "Chemistry",description: "Chemistry subject" },
+    { name: "Biology",description: "Biology subject" },
+    { name: "Computer Science",description: "Computer Science subject" },
+    { name: "Art",description: "Art subject"},
   ];
 
-  const subjects = [];
-  for (const subject of subjectData) {
-    const createdSubject = await prisma.subject.create({ data: subject });
-    subjects.push(createdSubject);
-  }
+ const subjects = [];
+for (const subject of subjectData) {
+  const createdSubject = await prisma.subject.create({
+    data: {
+      ...subject,
+      description: subject.description || "No description yet", // <-- add this
+    },
+  });
+  subjects.push(createdSubject);
+}
+
 
   // TEACHER
   const teachers = [];
   for (let i = 1; i <= 15; i++) {
     const teacher = await prisma.teacher.create({
       data: {
+        clerkId: `clerk-teacher-${i}`, // ✅ add this
         username: `teacher${i}`,
         name: `TName${i}`,
         surname: `TSurname${i}`,
@@ -128,6 +135,7 @@ async function main() {
         subjectId: subjects[(i % 10)].id,
         classId: classes[(i % 6)].id,
         teacherId: teachers[(i % 15)].id,
+       description: `Description for Lesson${i}`, // <-- add this
       },
     });
     lessons.push(lesson);
@@ -138,6 +146,7 @@ async function main() {
   for (let i = 1; i <= 25; i++) {
     const parent = await prisma.parent.create({
       data: {
+        clerkId: `clerk-teacher-${i}`, // ✅ add this
         username: `parent${i}`,
         name: `PName ${i}`,
         surname: `PSurname ${i}`,
@@ -154,6 +163,7 @@ async function main() {
   for (let i = 1; i <= 50; i++) {
     const student = await prisma.student.create({
       data: {
+        clerkId: `clerk-teacher-${i}`, // ✅ add this
         username: `student${i}`,
         name: `SName${i}`,
         surname: `SSurname ${i}`,
@@ -200,18 +210,20 @@ async function main() {
   }
 
   // RESULT
-  for (let i = 1; i <= 10; i++) {
-    await prisma.result.create({
-      data: {
-        score: Math.floor(Math.random() * 40) + 60, // Random score between 60-100
-        studentId: students[i - 1].id,
-        ...(i <= 5 
-          ? { examId: exams[i - 1].id } 
-          : { assignmentId: assignments[i - 6].id }
-        ),
-      },
-    });
-  }
+for (let i = 1; i <= 10; i++) {
+  await prisma.result.create({
+    data: {
+      score: Math.floor(Math.random() * 40) + 60, // Random score between 60-100
+      studentId: students[i - 1].id,
+      feedback: "Good performance", // <-- add this
+      ...(i <= 5
+        ? { examId: exams[i - 1].id }
+        : { assignmentId: assignments[i - 6].id }
+      ),
+    },
+  });
+}
+
 
   // ATTENDANCE
   for (let i = 1; i <= 10; i++) {

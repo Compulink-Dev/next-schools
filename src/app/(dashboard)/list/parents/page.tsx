@@ -11,7 +11,7 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link"; // Import Link
 import { Eye } from "lucide-react"; // Import Eye icon
 import { DataTable } from "@/components/DataTable";
-import { columns } from "./coulmns";
+import { columns } from "./columns";
 import FormContainerServer from "@/components/FormContainerServer";
 
 type ParentList = Parent & { students: Student[] };

@@ -1,6 +1,5 @@
 import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
-import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
@@ -8,18 +7,7 @@ import { Prisma } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
 import { DataTable } from "@/components/DataTable";
-
-type ResultList = {
-  id: number;
-  title: string;
-  studentName: string;
-  studentSurname: string;
-  teacherName: string;
-  teacherSurname: string;
-  score: number;
-  className: string;
-  startTime: Date;
-};
+import { columns, ResultList } from "./columns";
 
 const ResultListPage = async ({
   searchParams,
@@ -30,87 +18,70 @@ const ResultListPage = async ({
   const role = (sessionClaims?.metadata as { role?: string })?.role;
   const currentUserId = userId;
 
-  const columns = [
-    { header: "Title", accessor: "title" },
-    { header: "Student", accessor: "student" },
-    { header: "Score", accessor: "score", className: "hidden md:table-cell" },
-    {
-      header: "Teacher",
-      accessor: "teacher",
-      className: "hidden md:table-cell",
-    },
-    { header: "Class", accessor: "class", className: "hidden md:table-cell" },
-    { header: "Date", accessor: "date", className: "hidden md:table-cell" },
-    ...(role === "admin" || role === "teacher"
-      ? [{ header: "Actions", accessor: "action" }]
-      : []),
-  ];
-
-  const renderRow = (item: ResultList) => (
-    <tr
-      key={item.id}
-      className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaYellowLight"
-    >
-      <td className="flex items-center gap-4 p-4">{item.title}</td>
-      <td>{item.studentName + " " + item.studentSurname}</td>
-      <td className="hidden md:table-cell">{item.score}</td>
-      <td className="hidden md:table-cell">
-        {item.teacherName + " " + item.teacherSurname}
-      </td>
-      <td className="hidden md:table-cell">{item.className}</td>
-      <td className="hidden md:table-cell">
-        {new Intl.DateTimeFormat("en-US").format(item.startTime)}
-      </td>
-      <td>
-        <div className="flex items-center gap-2">
-          {(role === "admin" || role === "teacher") && (
-            <>
-              <FormContainer table="result" type="update" data={item} />
-              <FormContainer table="result" type="delete" id={item.id} />
-            </>
-          )}
-        </div>
-      </td>
-    </tr>
-  );
-
   const { page, ...queryParams } = searchParams;
   const p = page ? parseInt(page) : 1;
 
-  const query: Prisma.ResultWhereInput = {};
+  // Build query conditions
+  const conditions: Prisma.ResultWhereInput[] = [];
 
-  if (queryParams) {
-    for (const [key, value] of Object.entries(queryParams)) {
-      if (value !== undefined) {
-        switch (key) {
-          case "studentId":
-            query.studentId = value;
-            break;
-          case "search":
-            query.OR = [
-              { exam: { title: { contains: value, mode: "insensitive" } } },
-              { student: { name: { contains: value, mode: "insensitive" } } },
-            ];
-            break;
-        }
-      }
-    }
+  // URL PARAMS CONDITION
+  if (queryParams.studentId) {
+    conditions.push({ studentId: queryParams.studentId });
   }
 
-  switch (role) {
-    case "teacher":
-      query.OR = [
+  if (queryParams.classId) {
+    conditions.push({
+      OR: [
+        { exam: { lesson: { classId: queryParams.classId } } },
+        { assignment: { lesson: { classId: queryParams.classId } } },
+      ],
+    });
+  }
+
+  if (queryParams.search) {
+    conditions.push({
+      OR: [
+        {
+          exam: {
+            title: { contains: queryParams.search, mode: "insensitive" },
+          },
+        },
+        {
+          assignment: {
+            title: { contains: queryParams.search, mode: "insensitive" },
+          },
+        },
+        {
+          student: {
+            name: { contains: queryParams.search, mode: "insensitive" },
+          },
+        },
+        {
+          student: {
+            surname: { contains: queryParams.search, mode: "insensitive" },
+          },
+        },
+      ],
+    });
+  }
+
+  // ROLE CONDITIONS
+  if (role === "teacher") {
+    conditions.push({
+      OR: [
         { exam: { lesson: { teacherId: currentUserId! } } },
         { assignment: { lesson: { teacherId: currentUserId! } } },
-      ];
-      break;
-    case "student":
-      query.studentId = currentUserId!;
-      break;
-    case "parent":
-      query.student = { parentId: currentUserId! };
-      break;
+      ],
+    });
+  } else if (role === "student") {
+    conditions.push({ studentId: currentUserId! });
+  } else if (role === "parent") {
+    conditions.push({ student: { parentId: currentUserId! } });
   }
+
+  // Combine all conditions with AND
+  const query: Prisma.ResultWhereInput =
+    conditions.length > 0 ? { AND: conditions } : {};
 
   const [dataRes, count] = await prisma.$transaction([
     prisma.result.findMany({
@@ -140,11 +111,15 @@ const ResultListPage = async ({
       },
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
+      orderBy: {
+        createdAt: "desc",
+      },
     }),
     prisma.result.count({ where: query }),
   ]);
 
-  const data = dataRes
+  // Transform data with better structure and calculate grades
+  const data: ResultList[] = dataRes
     .map((item) => {
       const assessment = item.exam || item.assignment;
 
@@ -156,6 +131,23 @@ const ResultListPage = async ({
       }
 
       const isExam = "startTime" in assessment;
+      const maxScore = isExam ? 100 : (assessment as any).totalPoints || 100;
+      const percentage = (item.score / maxScore) * 100;
+
+      // Calculate grade
+      let grade = "";
+      if (percentage >= 90) grade = "A+";
+      else if (percentage >= 85) grade = "A";
+      else if (percentage >= 80) grade = "A-";
+      else if (percentage >= 75) grade = "B+";
+      else if (percentage >= 70) grade = "B";
+      else if (percentage >= 65) grade = "B-";
+      else if (percentage >= 60) grade = "C+";
+      else if (percentage >= 55) grade = "C";
+      else if (percentage >= 50) grade = "C-";
+      else if (percentage >= 45) grade = "D+";
+      else if (percentage >= 40) grade = "D";
+      else grade = "F";
 
       return {
         id: item.id,
@@ -165,11 +157,17 @@ const ResultListPage = async ({
         teacherName: assessment.lesson.teacher.name,
         teacherSurname: assessment.lesson.teacher.surname,
         score: item.score,
+        maxScore: maxScore,
         className: assessment.lesson.class.name,
-        startTime: isExam ? assessment.startTime : assessment.startDate,
+        startTime: isExam
+          ? (assessment as any).startTime
+          : (assessment as any).startDate,
+        type: isExam ? "exam" : "assignment",
+        percentage: percentage,
+        grade: grade,
       };
     })
-    .filter(Boolean); // ⛳ Remove null entries
+    .filter(Boolean) as ResultList[];
 
   return (
     <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
@@ -194,8 +192,8 @@ const ResultListPage = async ({
       <DataTable
         columns={columns}
         data={data}
-        searchKey="name"
-        searchPlaceholder="Search result..."
+        searchKey="title"
+        searchPlaceholder="Search results..."
       />
       {/* <Pagination page={p} count={count} /> */}
     </div>
