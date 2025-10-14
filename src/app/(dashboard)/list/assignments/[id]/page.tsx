@@ -15,6 +15,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 
+export const dynamic = "force-dynamic";
+
 type AssignmentWithRelations = Assignment & {
   lesson: {
     subject: Subject;

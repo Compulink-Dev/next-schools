@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import FormContainer from "@/components/FormContainer";
 import TableSearch from "@/components/TableSearch";
 import prisma from "@/lib/prisma";

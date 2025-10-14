@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 // app/list/grades/[id]/page.tsx
 import FormContainer from "@/components/FormContainer";
 import prisma from "@/lib/prisma";

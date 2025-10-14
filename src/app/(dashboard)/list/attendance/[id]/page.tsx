@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import FormContainer from "@/components/FormContainer";
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";

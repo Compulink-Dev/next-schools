@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 // app/list/subjects/page.tsx
 import Pagination from "@/components/Pagination";
 import TableSearch from "@/components/TableSearch";
