@@ -8,6 +8,8 @@ import { auth } from "@clerk/nextjs/server";
 import { DataTable } from "@/components/DataTable";
 import { columns } from "./columns";
 
+export const dynamic = "force-dynamic";
+
 type AnnouncementList = Announcement & {
   class?: Class;
 };
