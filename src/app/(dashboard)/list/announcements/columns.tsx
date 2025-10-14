@@ -7,7 +7,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import DeleteButton from "@/components/DeleteButton";
 import { toast } from "sonner";
-import FormContainer from "@/components/FormContainer";
 
 export type AnnouncementWithRelations = Announcement & {
   class?: Class | null;
