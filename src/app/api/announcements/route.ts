@@ -1,5 +1,5 @@
-// app/api/announcements/route.ts
 export const dynamic = 'force-dynamic';
+// app/api/announcements/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
