@@ -6,6 +6,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 type AnnouncementWithRelations = Announcement & {
   class?: Class | null;
 };
