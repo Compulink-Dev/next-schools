@@ -30,8 +30,8 @@ const SingleEventPage = async ({
   }
 
   const now = new Date();
-  const startTime = new Date(event.startTime);
-  const endTime = new Date(event.endTime);
+  const startTime = event.startTime ? new Date(event.startTime) : new Date();
+  const endTime = event.endTime ? new Date(event.endTime) : new Date();
 
   let status = "Ongoing";
   let statusColor = "text-green-600";

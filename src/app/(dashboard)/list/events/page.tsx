@@ -125,7 +125,6 @@ const EventListPage = async ({
       {/* LIST */}
       <DataTable
         columns={columns}
-        //@ts-expect-errors data not working properly
         data={data}
         searchKey="title"
         searchPlaceholder="Search event..."

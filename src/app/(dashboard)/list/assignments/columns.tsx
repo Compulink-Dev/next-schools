@@ -64,12 +64,18 @@ export const columns: ColumnDef<AssignmentWithRelations>[] = [
   {
     accessorKey: "startDate",
     header: "Start Date",
-    cell: ({ row }) => format(new Date(row.original.startDate), "MM/dd/yyyy"),
+    cell: ({ row }) =>
+      row.original.startDate
+        ? format(new Date(row.original.startDate), "MM/dd/yyyy")
+        : "No start date",
   },
   {
     accessorKey: "dueDate",
     header: "Due Date",
-    cell: ({ row }) => format(new Date(row.original.dueDate), "MM/dd/yyyy"),
+    cell: ({ row }) =>
+      row.original.dueDate
+        ? format(new Date(row.original.dueDate), "MM/dd/yyyy")
+        : "No due date",
   },
   {
     accessorKey: "status",
@@ -77,6 +83,12 @@ export const columns: ColumnDef<AssignmentWithRelations>[] = [
     cell: ({ row }) => {
       const assignment = row.original;
       const now = new Date();
+
+      // ✅ Safely handle nulls
+      if (!assignment.startDate || !assignment.dueDate) {
+        return <span className="text-gray-500 italic">Date not set</span>;
+      }
+
       const startDate = new Date(assignment.startDate);
       const dueDate = new Date(assignment.dueDate);
 

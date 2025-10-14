@@ -49,7 +49,10 @@ export const columns: ColumnDef<AnnouncementWithRelations>[] = [
     accessorKey: "description",
     header: "Description",
     cell: ({ row }) => (
-      <div className="max-w-xs truncate" title={row.original.description}>
+      <div
+        className="max-w-xs truncate"
+        title={row.original.description ?? undefined}
+      >
         {row.original.description || "No description"}
       </div>
     ),

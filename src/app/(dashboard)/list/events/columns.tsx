@@ -7,10 +7,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import DeleteButton from "@/components/DeleteButton";
 import { toast } from "sonner";
-import FormContainer from "@/components/FormContainer";
 
 export type EventWithRelations = Event & {
-  class?: Class;
+  class?: Class | null;
 };
 
 export const columns: ColumnDef<EventWithRelations>[] = [
@@ -42,53 +41,70 @@ export const columns: ColumnDef<EventWithRelations>[] = [
   {
     accessorKey: "description",
     header: "Description",
-    cell: ({ row }) => (
-      <div className="max-w-xs truncate" title={row.original.description}>
-        {row.original.description || "No description"}
-      </div>
-    ),
+    cell: ({ row }) => {
+      const desc = row.original.description ?? undefined;
+      return (
+        <div className="max-w-xs truncate" title={desc || "No description"}>
+          {desc || "No description"}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "startTime",
     header: "Start Time",
-    cell: ({ row }) => (
-      <div>
-        <div className="font-medium">
-          {new Intl.DateTimeFormat("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          }).format(row.original.startTime)}
+    cell: ({ row }) => {
+      const start = row.original.startTime
+        ? new Date(row.original.startTime)
+        : null;
+
+      return start ? (
+        <div>
+          <div className="font-medium">
+            {new Intl.DateTimeFormat("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }).format(start)}
+          </div>
+          <div className="text-xs text-gray-500">
+            {new Intl.DateTimeFormat("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }).format(start)}
+          </div>
         </div>
-        <div className="text-xs text-gray-500">
-          {new Intl.DateTimeFormat("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }).format(row.original.startTime)}
-        </div>
-      </div>
-    ),
+      ) : (
+        <span className="text-gray-500 italic">No start time</span>
+      );
+    },
   },
   {
     accessorKey: "endTime",
     header: "End Time",
-    cell: ({ row }) => (
-      <div>
-        <div className="font-medium">
-          {new Intl.DateTimeFormat("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          }).format(row.original.endTime)}
+    cell: ({ row }) => {
+      const end = row.original.endTime ? new Date(row.original.endTime) : null;
+
+      return end ? (
+        <div>
+          <div className="font-medium">
+            {new Intl.DateTimeFormat("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }).format(end)}
+          </div>
+          <div className="text-xs text-gray-500">
+            {new Intl.DateTimeFormat("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }).format(end)}
+          </div>
         </div>
-        <div className="text-xs text-gray-500">
-          {new Intl.DateTimeFormat("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }).format(row.original.endTime)}
-        </div>
-      </div>
-    ),
+      ) : (
+        <span className="text-gray-500 italic">No end time</span>
+      );
+    },
   },
   {
     accessorKey: "class",
@@ -104,16 +120,26 @@ export const columns: ColumnDef<EventWithRelations>[] = [
     header: "Status",
     cell: ({ row }) => {
       const now = new Date();
-      const startTime = new Date(row.original.startTime);
-      const endTime = new Date(row.original.endTime);
+      const start = row.original.startTime
+        ? new Date(row.original.startTime)
+        : null;
+      const end = row.original.endTime ? new Date(row.original.endTime) : null;
 
-      if (now < startTime) {
+      if (!start || !end) {
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            Not Scheduled
+          </span>
+        );
+      }
+
+      if (now < start) {
         return (
           <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
             Upcoming
           </span>
         );
-      } else if (now > endTime) {
+      } else if (now > end) {
         return (
           <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
             Completed
