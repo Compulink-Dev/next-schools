@@ -3,8 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 
-// Remove this line - route handlers handle dynamics differently
-// export const dynamic = 'force-dynamic';
+// Force dynamic behavior
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
