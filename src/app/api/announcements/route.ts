@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     // Build query conditions
     const where: any = {};
-
+ 
     if (classId) {
       where.classId = classId;
     }
