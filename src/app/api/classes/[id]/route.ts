@@ -1,4 +1,3 @@
-// app/api/teachers/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
@@ -18,7 +17,6 @@ export async function DELETE(
 
     const { id } = params;
 
-    // Delete the teacher
     await prisma.class.delete({
       where: { id },
     });
