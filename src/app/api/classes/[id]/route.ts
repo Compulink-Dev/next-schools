@@ -1,16 +1,19 @@
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
+export const runtime = "nodejs";
+
+
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 
-export const runtime = "nodejs";
-export const fetchCache = "force-no-store";
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // ✅ Call auth() inside the function — not at top-level
     const { userId, sessionClaims } = auth();
     const role = (sessionClaims?.metadata as { role?: string })?.role;
 
