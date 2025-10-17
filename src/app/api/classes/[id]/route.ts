@@ -3,11 +3,9 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 export const runtime = "nodejs";
 
-
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-
 
 export async function DELETE(
   request: NextRequest,
