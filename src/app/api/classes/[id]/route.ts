@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 
-// Runtime settings
 export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-export const revalidate = 0;
-export const runtime = "nodejs";
 
 export async function DELETE(
   request: NextRequest,
@@ -17,10 +12,13 @@ export async function DELETE(
     const role = (sessionClaims?.metadata as { role?: string })?.role;
 
     if (role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized :" }, { status: 401 });
     }
 
     const { id } = params;
+    
+    // Dynamic import to avoid build-time database connection
+    const { default: prisma } = await import('@/lib/prisma');
 
     await prisma.class.delete({
       where: { id },
