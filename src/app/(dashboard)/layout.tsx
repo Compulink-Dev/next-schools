@@ -1,4 +1,6 @@
-// app/dashboard/layout.tsx
+// app/(dashboard)/layout.tsx
+"use client";
+
 import { SidebarProvider } from "@/components/ui/sidebar";
 import Navbar from "@/components/Navbar";
 import { AppSidebar } from "@/components/AppSidebar";
