@@ -13,6 +13,26 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Users,
+  BookOpen,
+  Calendar,
+  Clock,
+  GraduationCap,
+  ArrowRight,
+  FileText,
+  BarChart3,
+} from "lucide-react";
 
 type SubjectWithRelations = Subject & {
   teachers: (TeacherSubject & {
@@ -65,274 +85,411 @@ const SingleSubjectPage = async ({
     return acc;
   }, {} as Record<string, { class: Class; lessons: (Lesson & { teacher: Teacher })[] }>);
 
-  return (
-    <div className="flex-1 p-4 flex flex-col gap-4 xl:flex-row">
-      {/* LEFT */}
-      <div className="w-full xl:w-2/3">
-        {/* TOP */}
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* SUBJECT INFO CARD */}
-          <div className="bg-lamaSkyLight py-6 px-4 rounded-md flex-1 flex gap-4">
-            <div className="w-1/3">
-              <div className="w-36 h-36 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="font-bold text-blue-800 text-4xl">
-                  {subject.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
-            </div>
-            <div className="w-2/3 flex flex-col justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <h1 className="text-xl font-semibold">{subject.name}</h1>
-                {role === "admin" && (
-                  <FormContainer table="subject" type="update" data={subject} />
-                )}
-              </div>
-              <p className="text-sm text-gray-500">
-                {subject.description ||
-                  "No description provided for this subject"}
-              </p>
-              <div className="flex items-center justify-between gap-2 flex-wrap text-xs font-medium">
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/teacher.png" alt="" width={14} height={14} />
-                  <span>
-                    {totalTeachers} Teacher{totalTeachers !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/lesson.png" alt="" width={14} height={14} />
-                  <span>
-                    {totalLessons} Lesson{totalLessons !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <Image src="/class.png" alt="" width={14} height={14} />
-                  <span>
-                    {totalClasses} Class{totalClasses !== 1 ? "es" : ""}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+  const getInitials = (name: string) => {
+    return name.charAt(0).toUpperCase();
+  };
 
-        {/* TEACHERS SECTION */}
-        <div className="mt-4 bg-white rounded-md p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Assigned Teachers</h2>
+  const formatTime = (date: Date) => {
+    return new Date(date).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 p-4 lg:p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Section */}
+        <div className="mb-6 lg:mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <nav className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                <Link
+                  href="/list/subjects"
+                  className="hover:text-indigo-600 transition-colors"
+                >
+                  Subjects
+                </Link>
+                <span>/</span>
+                <span className="text-gray-700 font-medium">
+                  {subject.name}
+                </span>
+              </nav>
+              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">
+                {subject.name}
+              </h1>
+              <p className="text-gray-600 mt-2">
+                {subject.description ||
+                  "Comprehensive subject overview and management"}
+              </p>
+            </div>
+
             {role === "admin" && (
-              <FormContainer table="subject" type="update" data={subject} />
+              <div className="flex gap-3">
+                <FormContainer table="subject" type="update" data={subject} />
+                <Button variant="outline" className="gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Schedule
+                </Button>
+              </div>
             )}
           </div>
-          {subject.teachers.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {subject.teachers.map((teacherSub) => (
-                <div
-                  key={teacherSub.id}
-                  className="flex items-center gap-3 p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                    <span className="font-semibold text-purple-800">
-                      {teacherSub.teacher.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">
-                      {teacherSub.teacher.name} {teacherSub.teacher.surname}
-                    </h3>
-                    <p className="text-xs text-gray-500">
-                      {teacherSub.teacher.email}
-                    </p>
-                  </div>
-                  <Link
-                    href={`/list/teachers/${teacherSub.teacher.id}`}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                  >
-                    View
-                  </Link>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-6 text-gray-500">
-              <Image
-                src="/no-teachers.png"
-                alt="No teachers"
-                width={64}
-                height={64}
-                className="mx-auto mb-2 opacity-50"
-              />
-              <p>No teachers assigned to this subject</p>
-              {role === "admin" && (
-                <p className="text-sm mt-1">
-                  Assign teachers using the edit button above
-                </p>
-              )}
-            </div>
-          )}
         </div>
 
-        {/* LESSONS SCHEDULE */}
-        <div className="mt-4 bg-white rounded-md p-4">
-          <h2 className="text-lg font-semibold mb-4">Lesson Schedule</h2>
-          {subject.lessons.length > 0 ? (
-            <div className="space-y-4">
-              {Object.entries(lessonsByClass).map(([classId, classData]) => (
-                <div
-                  key={classId}
-                  className="border border-gray-200 rounded-md"
-                >
-                  <div className="bg-gray-50 px-4 py-2 border-b">
-                    <h3 className="font-semibold text-gray-700">
-                      {classData.class.name} Class
-                    </h3>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
+          {/* Left Column - Main Content */}
+          <div className="xl:col-span-2 space-y-6 lg:space-y-8">
+            {/* Subject Profile Card */}
+            <Card className="border-0 shadow-lg rounded-2xl overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white pb-6">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-16 w-16 border-2 border-white/20">
+                    <AvatarFallback className="bg-indigo-500 text-white text-lg font-semibold">
+                      {getInitials(subject.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <CardTitle className="text-2xl flex items-center gap-3">
+                      {subject.name}
+                      <Badge
+                        variant="secondary"
+                        className="bg-white/20 text-white border-0"
+                      >
+                        Subject
+                      </Badge>
+                    </CardTitle>
+                    <CardDescription className="text-indigo-100">
+                      {totalLessons} lessons across {totalClasses} classes
+                    </CardDescription>
                   </div>
-                  <div className="p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {classData.lessons.map((lesson) => (
-                        <div
-                          key={lesson.id}
-                          className="border border-gray-200 rounded-md p-3 hover:bg-blue-50 transition-colors"
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="font-medium text-sm capitalize">
-                              {lesson.day}
-                            </span>
-                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                              {lesson.name}
-                            </span>
-                          </div>
-                          <div className="text-xs text-gray-600 space-y-1">
-                            <p>
-                              <strong>Time:</strong>{" "}
-                              {new Date(lesson.startTime).toLocaleTimeString(
-                                [],
-                                {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                }
-                              )}{" "}
-                              -{" "}
-                              {new Date(lesson.endTime).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </p>
-                            <p>
-                              <strong>Teacher:</strong> {lesson.teacher.name}{" "}
-                              {lesson.teacher.surname}
-                            </p>
-                          </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                      <GraduationCap className="h-4 w-4 text-indigo-600" />
+                      Subject Information
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 text-gray-700">
+                        <BookOpen className="h-4 w-4 text-gray-400" />
+                        <span className="text-gray-900">{subject.name}</span>
+                      </div>
+                      {subject.description && (
+                        <div className="flex items-start gap-3 text-gray-700">
+                          <FileText className="h-4 w-4 text-gray-400 mt-0.5" />
+                          <span className="text-gray-900">
+                            {subject.description}
+                          </span>
                         </div>
-                      ))}
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                      <Users className="h-4 w-4 text-indigo-600" />
+                      Teaching Staff
+                    </h3>
+                    <div className="space-y-2">
+                      {subject.teachers.length > 0 ? (
+                        subject.teachers.map((teacherSub) => (
+                          <div
+                            key={teacherSub.id}
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="bg-purple-100 text-purple-600 text-xs">
+                                  {getInitials(teacherSub.teacher.name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium text-gray-900 text-sm">
+                                  {teacherSub.teacher.name}{" "}
+                                  {teacherSub.teacher.surname}
+                                </p>
+                              </div>
+                            </div>
+                            <Link href={`/teachers/${teacherSub.teacher.id}`}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="gap-1"
+                              >
+                                View
+                                <ArrowRight className="h-3 w-3" />
+                              </Button>
+                            </Link>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-500 text-sm">
+                          No teachers assigned
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-6 text-gray-500">
-              <Image
-                src="/no-lessons.png"
-                alt="No lessons"
-                width={64}
-                height={64}
-                className="mx-auto mb-2 opacity-50"
-              />
-              <p>No lessons scheduled for this subject</p>
-              <p className="text-sm mt-1">
-                Lessons will appear here when scheduled by teachers
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
+              </CardContent>
+            </Card>
 
-      {/* RIGHT */}
-      <div className="w-full xl:w-1/3 flex flex-col gap-4">
-        <div className="bg-white p-4 rounded-md">
-          <h1 className="text-xl font-semibold">Quick Links</h1>
-          <div className="mt-4 flex flex-col gap-2 text-xs text-gray-500">
-            <Link
-              className="p-3 rounded-md bg-lamaSkyLight hover:bg-lamaSky transition-colors"
-              href={`/list/lessons?search=${encodeURIComponent(subject.name)}`}
-            >
-              View All {subject.name} Lessons
-            </Link>
-            <Link
-              className="p-3 rounded-md bg-lamaPurpleLight hover:bg-lamaPurple transition-colors"
-              href={`/list/teachers?subject=${encodeURIComponent(
-                subject.name
-              )}`}
-            >
-              View {subject.name} Teachers
-            </Link>
-            <Link
-              className="p-3 rounded-md bg-pink-50 hover:bg-pink-100 transition-colors"
-              href={`/list/exams?search=${encodeURIComponent(subject.name)}`}
-            >
-              View {subject.name} Exams
-            </Link>
-            <Link
-              className="p-3 rounded-md bg-lamaYellowLight hover:bg-lamaYellow transition-colors"
-              href={`/list/assignments?search=${encodeURIComponent(
-                subject.name
-              )}`}
-            >
-              View {subject.name} Assignments
-            </Link>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Card className="border-0 shadow-md rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Users className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {totalTeachers}
+                    </p>
+                    <p className="text-sm text-gray-600">Teachers</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-md rounded-xl bg-gradient-to-br from-green-50 to-green-100/50">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <BookOpen className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {totalLessons}
+                    </p>
+                    <p className="text-sm text-gray-600">Lessons</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-md rounded-xl bg-gradient-to-br from-purple-50 to-purple-100/50">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <GraduationCap className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {totalClasses}
+                    </p>
+                    <p className="text-sm text-gray-600">Classes</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Lessons Schedule */}
+            <Card className="border-0 shadow-lg rounded-2xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-indigo-600" />
+                  Lesson Schedule
+                </CardTitle>
+                <CardDescription>
+                  All scheduled lessons for this subject
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {subject.lessons.length > 0 ? (
+                  <div className="space-y-6">
+                    {Object.entries(lessonsByClass).map(
+                      ([classId, classData]) => (
+                        <div
+                          key={classId}
+                          className="border border-gray-200 rounded-lg overflow-hidden"
+                        >
+                          <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b">
+                            <h3 className="font-semibold text-gray-700">
+                              {classData.class.name} Class
+                            </h3>
+                          </div>
+                          <div className="p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {classData.lessons.map((lesson) => (
+                                <div
+                                  key={lesson.id}
+                                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 bg-white"
+                                >
+                                  <div className="flex justify-between items-start mb-3">
+                                    <Badge
+                                      variant="outline"
+                                      className="capitalize"
+                                    >
+                                      {lesson.day}
+                                    </Badge>
+                                    <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full font-medium">
+                                      {lesson.name}
+                                    </span>
+                                  </div>
+                                  <div className="space-y-2 text-sm">
+                                    <div className="flex items-center gap-2 text-gray-600">
+                                      <Clock className="h-4 w-4" />
+                                      <span>
+                                        {formatTime(lesson.startTime)} -{" "}
+                                        {formatTime(lesson.endTime)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-gray-600">
+                                      <Users className="h-4 w-4" />
+                                      <span>
+                                        {lesson.teacher.name}{" "}
+                                        {lesson.teacher.surname}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                    <p>No lessons scheduled</p>
+                    <p className="text-sm mt-1">
+                      Lessons will appear here when scheduled
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Sidebar */}
+          <div className="space-y-6 lg:space-y-8">
+            {/* Quick Actions */}
+            <Card className="border-0 shadow-lg rounded-2xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-indigo-600" />
+                  Quick Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Link
+                  href={`/list/lessons?search=${encodeURIComponent(
+                    subject.name
+                  )}`}
+                  className="block"
+                >
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between h-12"
+                  >
+                    View All Lessons
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link
+                  href={`/list/teachers?subject=${encodeURIComponent(
+                    subject.name
+                  )}`}
+                  className="block"
+                >
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between h-12"
+                  >
+                    View Teachers
+                    <Users className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link
+                  href={`/list/exams?search=${encodeURIComponent(
+                    subject.name
+                  )}`}
+                  className="block"
+                >
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between h-12"
+                  >
+                    View Exams
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Subject Statistics */}
+            <Card className="border-0 shadow-lg rounded-2xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-indigo-600" />
+                  Subject Statistics
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Total Teachers</span>
+                  <span className="font-semibold">{totalTeachers}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Total Lessons</span>
+                  <span className="font-semibold">{totalLessons}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Classes</span>
+                  <span className="font-semibold">{totalClasses}</span>
+                </div>
+                <div className="pt-3 border-t">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Subject ID</span>
+                    <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
+                      {subject.id.slice(0, 8)}...
+                    </code>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Subject Description */}
+            {subject.description && (
+              <Card className="border-0 shadow-lg rounded-2xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-indigo-600" />
+                    Description
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {subject.description}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Admin Actions */}
+            {role === "admin" && (
+              <Card className="border-0 shadow-lg rounded-2xl border-l-4 border-l-indigo-500">
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2 text-indigo-600">
+                    <Users className="h-4 w-4" />
+                    Manage Subject
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <FormContainer table="subject" type="update" data={subject} />
+                  <Link
+                    href={`/list/lessons?subjectId=${subject.id}`}
+                    className="block"
+                  >
+                    <Button className="w-full gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Schedule Lesson
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
-
-        {/* SUBJECT STATS CARD */}
-        <div className="bg-white p-4 rounded-md">
-          <h2 className="text-lg font-semibold mb-4">Subject Statistics</h2>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Total Teachers</span>
-              <span className="font-semibold">{totalTeachers}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Total Lessons</span>
-              <span className="font-semibold">{totalLessons}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Classes Teaching</span>
-              <span className="font-semibold">{totalClasses}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Subject ID</span>
-              <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                {subject.id.slice(0, 8)}...
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* SUBJECT DESCRIPTION */}
-        {subject.description && (
-          <div className="bg-white p-4 rounded-md">
-            <h2 className="text-lg font-semibold mb-4">Subject Description</h2>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              {subject.description}
-            </p>
-          </div>
-        )}
-
-        {/* ACTION BUTTONS FOR ADMIN */}
-        {role === "admin" && (
-          <div className="bg-white p-4 rounded-md">
-            <h2 className="text-lg font-semibold mb-4">Manage Subject</h2>
-            <div className="space-y-2">
-              <FormContainer table="subject" type="update" data={subject} />
-              <Link
-                href={`/list/lessons?subjectId=${subject.id}`}
-                className="w-full block text-center bg-lamaSky text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-lamaSkyDark transition-colors"
-              >
-                Schedule New Lesson
-              </Link>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

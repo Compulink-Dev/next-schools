@@ -22,7 +22,7 @@ model Student {
   phone       String?      @unique
   address     String
   img         String?
-  bloodType   String
+  bloodType   String?
   sex         UserSex
   createdAt   DateTime     @default(now())
   parentId    String       @db.ObjectId
@@ -35,6 +35,7 @@ model Student {
   results     Result[]
   birthday    DateTime
   Fee         Fee[]
+  messages    Message[] // ONLY ONE
 }
 
 model Teacher {
@@ -48,7 +49,7 @@ model Teacher {
   address     String
   img         String?
   description String?
-  bloodType   String
+  bloodType   String?
   sex         UserSex
   createdAt   DateTime         @default(now())
   subjects    TeacherSubject[]
@@ -56,6 +57,7 @@ model Teacher {
   classes     TeacherClass[]
   birthday    DateTime
   Class       Class[]
+  messages    Message[] // ONLY ONE
 }
 
 model Parent {
@@ -67,8 +69,10 @@ model Parent {
   email     String?   @unique
   phone     String    @unique
   address   String
+  bloodType String?
   createdAt DateTime  @default(now())
   students  Student[]
+  messages  Message[] // ONLY ONE
 }
 
 model Grade {
@@ -85,7 +89,7 @@ model Class {
   id            String         @id @default(auto()) @map("_id") @db.ObjectId
   name          String         @unique
   capacity      Int
-  description   String? // ✅ optional field
+  description   String?
   supervisorId  String?        @db.ObjectId
   supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])
   lessons       Lesson[]
@@ -110,7 +114,6 @@ model Subject {
   updatedAt   DateTime         @updatedAt
 }
 
-// Explicit many-to-many for Teacher-Subject
 model TeacherSubject {
   id        String  @id @default(auto()) @map("_id") @db.ObjectId
   teacherId String  @db.ObjectId
@@ -124,7 +127,6 @@ model TeacherSubject {
   @@unique([teacherId, subjectId])
 }
 
-// Explicit many-to-many for Teacher-Class
 model TeacherClass {
   id        String  @id @default(auto()) @map("_id") @db.ObjectId
   teacherId String  @db.ObjectId
@@ -227,7 +229,9 @@ model Announcement {
   date        DateTime
   classId     String?  @db.ObjectId
   class       Class?   @relation(fields: [classId], references: [id])
-  priority    String   @default("normal") // ✅ add this line
+  priority    String   @default("normal")
+  authorId    String?  @db.ObjectId
+  author      User?    @relation(fields: [authorId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -235,17 +239,24 @@ model Announcement {
 model Message {
   id           String       @id @default(auto()) @map("_id") @db.ObjectId
   title        String
-  senderId     String
+  senderId     String // Clerk ID
   senderType   SenderType
-  receiverId   String
+  receiverId   String // Clerk ID
   receiverType ReceiverType
   content      String
-  read         Boolean      @default(false)
+  isRead       Boolean      @default(false)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+  student      Student?     @relation(fields: [studentId], references: [id])
+  studentId    String?      @db.ObjectId
+  teacher      Teacher?     @relation(fields: [teacherId], references: [id])
+  teacherId    String?      @db.ObjectId
+  parent       Parent?      @relation(fields: [parentId], references: [id])
+  parentId     String?      @db.ObjectId
+
+  @@map("messages")
 }
 
-// Fees management
 model Fee {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
   title         String
@@ -263,6 +274,19 @@ model Fee {
   updatedAt     DateTime  @updatedAt
 }
 
+model User {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  clerkId       String         @unique
+  username      String         @unique
+  name          String
+  surname       String
+  email         String?        @unique
+  role          UserRole       @default(STUDENT)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  announcements Announcement[]
+}
+
 enum FeeStatus {
   PENDING
   PAID
@@ -274,6 +298,13 @@ enum SenderType {
   STUDENT
   PARENT
   ADMIN
+}
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
 }
 
 enum ReceiverType {

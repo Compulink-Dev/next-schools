@@ -209,6 +209,32 @@ export const parentSchema = z.object({
     message: "Invalid phone number",
   }),
   address: z.string().min(5, { message: "Address must be at least 5 characters." }),
+  bloodType: z.string().min(1, { message: "Blood Type is required!" }),
 });
 
+
 export type ParentSchema = z.infer<typeof parentSchema>;
+
+// Add these to your existing formValidationSchemas.ts
+
+export const feeSchema = z.object({
+  id: z.string().optional(),
+  amount: z.coerce.number().min(0, "Amount must be positive"),
+  dueDate: z.coerce.date({ required_error: "Due date is required" }),
+  status: z.enum(["PENDING", "PAID", "OVERDUE"], {
+    required_error: "Status is required",
+  }),
+  studentId: z.string().min(1, "Student is required"),
+  description: z.string().optional(),
+});
+
+export const gradeSchema = z.object({
+  id: z.string().optional(),
+  level: z.coerce.number().min(1).max(12, "Grade level must be between 1 and 12"),
+  section: z.string().min(1, "Section is required"),
+  classId: z.string().optional(),
+  capacity: z.coerce.number().min(1, "Capacity must be at least 1").optional(),
+});
+
+export type FeeSchema = z.infer<typeof feeSchema>;
+export type GradeSchema = z.infer<typeof gradeSchema>;

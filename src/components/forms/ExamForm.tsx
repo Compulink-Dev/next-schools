@@ -1,17 +1,28 @@
+// components/forms/ExamForm.tsx
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import InputField from "../InputField";
+import { useState } from "react";
 import { examSchema, ExamSchema } from "@/lib/formValidationSchemas";
 import { createExam, updateExam } from "@/lib/actions";
-import { Dispatch, SetStateAction, useEffect } from "react";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Controller } from "react-hook-form";
 import { DateTimePicker } from "../DateTimePicker";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, FileText, Clock, BookOpen } from "lucide-react";
 
-// Form input types
 type ExamFormValues = {
   id?: string;
   title: string;
@@ -28,15 +39,15 @@ const ExamForm = ({
 }: {
   type: "create" | "update";
   data?: Partial<ExamSchema>;
-  setOpen: Dispatch<SetStateAction<boolean>>;
+  setOpen: (open: boolean) => void;
   relatedData?: { lessons: { id: string; name: string }[] };
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const {
     register,
     handleSubmit,
     formState: { errors },
     control,
-    setValue,
   } = useForm<ExamFormValues>({
     resolver: zodResolver(examSchema),
     defaultValues: {
@@ -45,167 +56,203 @@ const ExamForm = ({
       startTime: data?.startTime ? new Date(data.startTime) : new Date(),
       endTime: data?.endTime
         ? new Date(data.endTime)
-        : new Date(Date.now() + 2 * 60 * 60 * 1000), // Default 2 hours later
+        : new Date(Date.now() + 2 * 60 * 60 * 1000),
       lessonId: data?.lessonId?.toString() || "",
     },
   });
 
   const router = useRouter();
 
-  useEffect(() => {
-    console.log("🧾 Form mounted for:", type);
-  }, [type]);
+  const onSubmit = handleSubmit(async (formData) => {
+    setIsLoading(true);
+    try {
+      const payload = {
+        title: formData.title,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        lessonId: formData.lessonId,
+      };
 
-  const onSubmit = handleSubmit(
-    async (formData) => {
-      console.log("📤 Form submitted with values:", formData);
-
-      try {
-        const payload = {
-          title: formData.title,
-          startTime: formData.startTime,
-          endTime: formData.endTime,
-          lessonId: formData.lessonId,
-        };
-
-        let response;
-        if (type === "create") {
-          console.log("📦 Sending create request with payload:", payload);
-          response = await createExam(payload);
-        } else {
-          if (!formData.id) {
-            toast.error("Missing exam ID for update.");
-            console.error("❌ No ID provided in formData.");
-            return;
-          }
-          const updatePayload = { ...payload, id: formData.id };
-          console.log("🛠️ Sending update request with payload:", updatePayload);
-          response = await updateExam(updatePayload);
+      let response;
+      if (type === "create") {
+        response = await createExam(payload);
+      } else {
+        if (!formData.id) {
+          toast.error("Missing exam ID for update.");
+          return;
         }
-
-        console.log("✅ Received response from server:", response);
-
-        if (response?.success) {
-          toast(
-            `Exam ${type === "create" ? "created" : "updated"} successfully!`
-          );
-          setOpen(false);
-          router.refresh();
-        } else {
-          toast.error("Failed to process the exam.");
-          console.warn("⚠️ Operation failed with response:", response);
-        }
-      } catch (error) {
-        toast.error("An unexpected error occurred.");
-        console.error("🔥 Uncaught error in exam form submission:", error);
+        response = await updateExam({
+          ...payload,
+          id: formData.id,
+        });
       }
-    },
-    (formErrors) => {
-      console.error(
-        "❌ Validation blocked form submission. Errors:",
-        formErrors
-      );
-      toast.error("Please correct the highlighted form errors.");
+
+      if (response?.success) {
+        toast.success(
+          `Exam ${type === "create" ? "created" : "updated"} successfully!`
+        );
+        setOpen(false);
+        router.refresh();
+      } else {
+        toast.error(response?.error || "Failed to process the exam.");
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred.");
+    } finally {
+      setIsLoading(false);
     }
-  );
+  });
 
   const { lessons = [] } = relatedData || {};
 
-  // Helper function to handle date changes safely
-  const handleDateChange = (
-    fieldName: "startTime" | "endTime",
-    date: Date | undefined
-  ) => {
-    const safeDate = date || new Date();
-    setValue(fieldName, safeDate);
-  };
-
   return (
-    <form className="flex flex-col gap-8" onSubmit={onSubmit}>
-      <h1 className="text-xl font-semibold">
-        {type === "create" ? "Create a new exam" : "Update the exam"}
-      </h1>
-
-      <div className="flex justify-between flex-wrap gap-4">
-        <InputField
-          label="Exam title"
-          name="title"
-          register={register}
-          error={errors.title}
-        />
-
-        {/* Start Time DateTimePicker */}
-        <Controller
-          control={control}
-          name="startTime"
-          render={({ field }) => (
-            <DateTimePicker
-              label="Start Time"
-              value={field.value}
-              onChange={(date) => {
-                field.onChange(date);
-                handleDateChange("startTime", date);
-              }}
-              error={errors.startTime?.message?.toString()}
-            />
-          )}
-        />
-
-        {/* End Time DateTimePicker */}
-        <Controller
-          control={control}
-          name="endTime"
-          render={({ field }) => (
-            <DateTimePicker
-              label="End Time"
-              value={field.value}
-              onChange={(date) => {
-                field.onChange(date);
-                handleDateChange("endTime", date);
-              }}
-              error={errors.endTime?.message?.toString()}
-            />
-          )}
-        />
-
-        {data && (
-          <InputField
-            label="ID (hidden)"
-            name="id"
-            register={register}
-            error={errors.id}
-            hidden
-          />
-        )}
-
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Lesson</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("lessonId")}
-            defaultValue={data?.lessonId?.toString() || ""}
-          >
-            <option value="" disabled>
-              Select a lesson
-            </option>
-            {lessons.map((lesson) => (
-              <option key={lesson.id} value={lesson.id.toString()}>
-                {lesson.name}
-              </option>
-            ))}
-          </select>
-          {errors.lessonId?.message && (
-            <p className="text-xs text-red-400">
-              {errors.lessonId.message.toString()}
-            </p>
-          )}
+    <Card className="border-0 shadow-lg">
+      <CardHeader className="bg-gradient-to-r from-orange-50 to-orange-100/50 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+            <FileText className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <CardTitle className="text-xl">
+              {type === "create" ? "Create Exam" : "Update Exam"}
+            </CardTitle>
+            <CardDescription>
+              {type === "create"
+                ? "Schedule a new examination"
+                : "Modify exam details"}
+            </CardDescription>
+          </div>
         </div>
-      </div>
+      </CardHeader>
 
-      <button className="bg-blue-400 text-white p-2 rounded-md">
-        {type === "create" ? "Create" : "Update"}
-      </button>
-    </form>
+      <CardContent className="pt-6">
+        <form onSubmit={onSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Exam Title *</Label>
+              <Input
+                id="title"
+                placeholder="Enter exam title..."
+                {...register("title")}
+                className={errors.title ? "border-red-500" : ""}
+              />
+              {errors.title && (
+                <p className="text-sm text-red-500">{errors.title.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lessonId">Lesson *</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                {...register("lessonId")}
+                defaultValue={data?.lessonId?.toString() || ""}
+              >
+                <option value="" disabled>
+                  Select a lesson
+                </option>
+                {lessons.map((lesson) => (
+                  <option key={lesson.id} value={lesson.id.toString()}>
+                    {lesson.name}
+                  </option>
+                ))}
+              </select>
+              {errors.lessonId && (
+                <p className="text-sm text-red-500">
+                  {errors.lessonId.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Start Time *</Label>
+              <Controller
+                control={control}
+                name="startTime"
+                render={({ field }) => (
+                  <DateTimePicker
+                    label="Start Time"
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.startTime?.message}
+                  />
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>End Time *</Label>
+              <Controller
+                control={control}
+                name="endTime"
+                render={({ field }) => (
+                  <DateTimePicker
+                    label="End Time"
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.endTime?.message}
+                  />
+                )}
+              />
+            </div>
+
+            {data?.id && <input type="hidden" {...register("id")} />}
+          </div>
+
+          <Card className="bg-orange-50 border-orange-200">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
+                  <Clock className="h-3 w-3 text-white" />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-orange-800">
+                    Exam Guidelines
+                  </h4>
+                  <ul className="text-xs text-orange-700 space-y-1">
+                    <li>
+                      • Ensure the exam duration is appropriate for the content
+                    </li>
+                    <li>• Start and end times should be clearly defined</li>
+                    <li>
+                      • Exams will be visible to students in their schedules
+                    </li>
+                    <li>• Make sure the lesson selection is accurate</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 bg-orange-600 hover:bg-orange-700"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  {type === "create" ? "Creating..." : "Updating..."}
+                </>
+              ) : type === "create" ? (
+                "Create Exam"
+              ) : (
+                "Update Exam"
+              )}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

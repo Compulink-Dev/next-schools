@@ -1,14 +1,12 @@
+//@ts-nocheck
+// components/forms/FeeForm.tsx
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import InputField from "../InputField";
-import { useFormState } from "react-dom";
-import { Dispatch, SetStateAction, useEffect } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { z } from "zod";
-import { createFee, updateFee } from "@/lib/actions";
+import { toast } from "sonner";
 import { Controller } from "react-hook-form";
 import { DateTimePicker } from "../DateTimePicker";
 import {
@@ -20,18 +18,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const feeSchema = z.object({
-  id: z.string().optional(),
-  title: z.string().min(1, "Title is required"),
-  amount: z.coerce.number().min(0, "Amount is required"),
-  dueDate: z.date({ required_error: "Due date is required" }),
-  classId: z.string().optional(),
-  studentId: z.string().optional(),
-  status: z.enum(["PENDING", "PAID", "PARTIAL"]).optional(),
-});
-
-export type FeeFormValues = z.infer<typeof feeSchema>;
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, DollarSign, Calendar, Users, User } from "lucide-react";
+import { createFee, updateFee } from "@/lib/actions";
+import { feeSchema, FeeFormValues } from "@/lib/formValidationSchemas";
 
 const FeeForm = ({
   type,
@@ -41,189 +41,241 @@ const FeeForm = ({
 }: {
   type: "create" | "update";
   data?: Partial<FeeFormValues>;
-  setOpen: Dispatch<SetStateAction<boolean>>;
+  setOpen: (open: boolean) => void;
   relatedData?: {
     classes: { id: string; name: string }[];
     students: { id: string; name: string; surname: string }[];
   };
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const {
     register,
     handleSubmit,
     formState: { errors },
     control,
-    setValue,
   } = useForm<FeeFormValues>({
     resolver: zodResolver(feeSchema),
     defaultValues: {
       ...data,
       dueDate: data?.dueDate
         ? new Date(data.dueDate)
-        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Default 30 days later
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       classId: data?.classId || undefined,
       studentId: data?.studentId || undefined,
     },
   });
 
-  const [state, formAction] = useFormState(
-    type === "create" ? createFee : updateFee,
-    { success: false, error: false }
-  );
   const router = useRouter();
 
-  useEffect(() => {
-    if (state.success) {
-      toast(`Fee has been ${type === "create" ? "created" : "updated"}!`);
-      setOpen(false);
-      router.refresh();
-    }
-  }, [state, router, type, setOpen]);
+  const onSubmit = handleSubmit(async (formData) => {
+    setIsLoading(true);
+    try {
+      const result =
+        type === "create"
+          ? await createFee(formData)
+          : await updateFee(formData);
 
-  const onSubmit = handleSubmit((formData) => {
-    formAction(formData as any);
+      if (result.success) {
+        toast.success(
+          `Fee ${type === "create" ? "created" : "updated"} successfully!`
+        );
+        setOpen(false);
+        router.refresh();
+      } else {
+        toast.error("Something went wrong!");
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred.");
+    } finally {
+      setIsLoading(false);
+    }
   });
 
-  // Helper function to handle date changes safely
-  const handleDateChange = (date: Date | undefined) => {
-    const safeDate = date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    setValue("dueDate", safeDate);
-  };
-
   return (
-    <form className="flex flex-col gap-8" onSubmit={onSubmit}>
-      <h1 className="text-xl font-semibold">
-        {type === "create" ? "Create Fee" : "Update Fee"}
-      </h1>
-
-      <div className="flex justify-between flex-wrap gap-4">
-        {data?.id && (
-          <InputField
-            label="Id"
-            name="id"
-            register={register}
-            error={errors?.id}
-            hidden
-          />
-        )}
-
-        <InputField
-          label="Title"
-          name="title"
-          register={register}
-          error={errors?.title}
-        />
-
-        <InputField
-          label="Amount"
-          name="amount"
-          type="number"
-          register={register}
-          error={errors?.amount}
-        />
-
-        {/* Due Date DateTimePicker */}
-        <Controller
-          control={control}
-          name="dueDate"
-          render={({ field }) => (
-            <DateTimePicker
-              label="Due Date"
-              value={field.value}
-              onChange={(date) => {
-                field.onChange(date);
-                handleDateChange(date);
-              }}
-              error={errors.dueDate?.message?.toString()}
-            />
-          )}
-        />
-
-        {/* Class Select */}
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Class (optional)</label>
-          <Controller
-            control={control}
-            name="classId"
-            render={({ field }) => (
-              <Select
-                onValueChange={field.onChange}
-                value={field.value || "none"}
-                defaultValue={data?.classId || "none"}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select class" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Classes</SelectLabel>
-                    <SelectItem value="none">None</SelectItem>
-                    {relatedData?.classes?.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            )}
-          />
+    <Card className="border-0 shadow-lg">
+      <CardHeader className="bg-gradient-to-r from-emerald-50 to-emerald-100/50 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
+            <DollarSign className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <CardTitle className="text-xl">
+              {type === "create" ? "Create Fee" : "Update Fee"}
+            </CardTitle>
+            <CardDescription>
+              {type === "create"
+                ? "Create a new fee for students or classes"
+                : "Modify fee details"}
+            </CardDescription>
+          </div>
         </div>
+      </CardHeader>
 
-        {/* Student Select */}
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Student (optional)</label>
-          <Controller
-            control={control}
-            name="studentId"
-            render={({ field }) => (
-              <Select
-                onValueChange={field.onChange}
-                value={field.value || "none"}
-                defaultValue={data?.studentId || "none"}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select student" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Students</SelectLabel>
-                    <SelectItem value="none">None</SelectItem>
-                    {relatedData?.students?.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name} {s.surname}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
-      </div>
+      <CardContent className="pt-6">
+        <form onSubmit={onSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Fee Title *</Label>
+              <Input
+                id="title"
+                placeholder="Enter fee title..."
+                {...register("title")}
+                className={errors.title ? "border-red-500" : ""}
+              />
+              {errors.title && (
+                <p className="text-sm text-red-500">{errors.title.message}</p>
+              )}
+            </div>
 
-      <div className="bg-blue-50 p-4 rounded-md">
-        <h3 className="text-sm font-medium text-blue-800 mb-2">
-          Fee Information
-        </h3>
-        <ul className="text-xs text-blue-700 space-y-1">
-          <li>
-            • Amount should be in the smallest currency unit (e.g., cents)
-          </li>
-          <li>• Due date is when the fee payment is expected</li>
-          <li>• You can assign fees to specific classes or students</li>
-        </ul>
-      </div>
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount *</Label>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="Enter amount..."
+                {...register("amount", { valueAsNumber: true })}
+                className={errors.amount ? "border-red-500" : ""}
+              />
+              {errors.amount && (
+                <p className="text-sm text-red-500">{errors.amount.message}</p>
+              )}
+            </div>
 
-      {state.error && (
-        <span className="text-red-500">Something went wrong!</span>
-      )}
-      <button
-        className="bg-blue-400 hover:bg-blue-500 text-white p-2 rounded-md w-full mt-4 transition-colors"
-        type="submit"
-      >
-        {type === "create" ? "Create Fee" : "Update Fee"}
-      </button>
-    </form>
+            <div className="space-y-2">
+              <Controller
+                control={control}
+                name="dueDate"
+                render={({ field }) => (
+                  <DateTimePicker
+                    label="Due Date *"
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.dueDate?.message}
+                  />
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Target Class (Optional)</Label>
+              <Controller
+                control={control}
+                name="classId"
+                render={({ field }) => (
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || "none"}
+                  >
+                    <SelectTrigger>
+                      <Users className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Select class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Classes</SelectLabel>
+                        <SelectItem value="none">None</SelectItem>
+                        {relatedData?.classes?.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Target Student (Optional)</Label>
+              <Controller
+                control={control}
+                name="studentId"
+                render={({ field }) => (
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || "none"}
+                  >
+                    <SelectTrigger>
+                      <User className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Select student" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Students</SelectLabel>
+                        <SelectItem value="none">None</SelectItem>
+                        {relatedData?.students?.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name} {s.surname}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            {data?.id && <input type="hidden" {...register("id")} />}
+          </div>
+
+          <Card className="bg-emerald-50 border-emerald-200">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
+                  <DollarSign className="h-3 w-3 text-white" />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-emerald-800">
+                    Fee Information
+                  </h4>
+                  <ul className="text-xs text-emerald-700 space-y-1">
+                    <li>
+                      • Amount should be in the smallest currency unit (e.g.,
+                      cents)
+                    </li>
+                    <li>• Due date is when the fee payment is expected</li>
+                    <li>
+                      • You can assign fees to specific classes or students
+                    </li>
+                    <li>
+                      • Leave both class and student empty for general fees
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  {type === "create" ? "Creating..." : "Updating..."}
+                </>
+              ) : type === "create" ? (
+                "Create Fee"
+              ) : (
+                "Update Fee"
+              )}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

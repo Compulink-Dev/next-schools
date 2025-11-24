@@ -88,6 +88,11 @@ export const columns: ColumnDef<StudentWithRelations>[] = [
     cell: ({ row }) => row.original.phone || "N/A",
   },
   {
+    accessorKey: "bloodType",
+    header: "Blood Type",
+    cell: ({ row }) => row.original.bloodType || "N/A",
+  },
+  {
     accessorKey: "address",
     header: "Address",
     cell: ({ row }) => row.original.address || "N/A",
