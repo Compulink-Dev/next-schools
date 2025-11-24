@@ -1,16 +1,31 @@
+// components/AttendanceChart.tsx
 "use client";
-import Image from "next/image";
 import {
   BarChart,
   Bar,
-  Rectangle,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
+        <p className="font-semibold text-gray-800">{label}</p>
+        <p className="text-sm text-blue-600">
+          Present: <span className="font-semibold">{payload[0].value}</span>
+        </p>
+        <p className="text-sm text-red-500">
+          Absent: <span className="font-semibold">{payload[1].value}</span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
 const AttendanceChart = ({
   data,
@@ -18,38 +33,41 @@ const AttendanceChart = ({
   data: { name: string; present: number; absent: number }[];
 }) => {
   return (
-    <ResponsiveContainer width="100%" height="90%">
-      <BarChart width={500} height={300} data={data} barSize={20}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ddd" />
-        <XAxis
-          dataKey="name"
-          axisLine={false}
-          tick={{ fill: "#2e8bc0" }}
-          tickLine={false}
-        />
-        <YAxis axisLine={false} tick={{ fill: "#0c2d48" }} tickLine={false} />
-        <Tooltip
-          contentStyle={{ borderRadius: "10px", borderColor: "lightgray" }}
-        />
-        <Legend
-          align="left"
-          verticalAlign="top"
-          wrapperStyle={{ paddingTop: "20px", paddingBottom: "40px" }}
-        />
-        <Bar
-          dataKey="present"
-          fill="#0c2d48"
-          legendType="circle"
-          radius={[10, 10, 0, 0]}
-        />
-        <Bar
-          dataKey="absent"
-          fill="#2e8bc0"
-          legendType="circle"
-          radius={[10, 10, 0, 0]}
-        />
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="h-[300px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} barSize={32}>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            vertical={false}
+            stroke="#f0f0f0"
+          />
+          <XAxis
+            dataKey="name"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: "#6b7280", fontSize: 12 }}
+          />
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: "#6b7280", fontSize: 12 }}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Bar
+            dataKey="present"
+            fill="#3b82f6"
+            radius={[4, 4, 0, 0]}
+            name="Present"
+          />
+          <Bar
+            dataKey="absent"
+            fill="#ef4444"
+            radius={[4, 4, 0, 0]}
+            name="Absent"
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 };
 

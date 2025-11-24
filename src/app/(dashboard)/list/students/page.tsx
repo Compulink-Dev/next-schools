@@ -15,6 +15,7 @@ import { Eye } from "lucide-react";
 import FormContainerServer from "@/components/FormContainerServer";
 import { DataTable } from "@/components/DataTable";
 import { columns } from "./columns";
+import FilterSort from "@/components/FilterSort";
 
 type StudentList = Student & {
   class?: Class | null;
@@ -50,7 +51,11 @@ const StudentListPage = async ({
             };
             break;
           case "search":
-            query.name = { contains: value, mode: "insensitive" };
+            query.OR = [
+              { name: { contains: value, mode: "insensitive" } },
+              { surname: { contains: value, mode: "insensitive" } },
+              { email: { contains: value, mode: "insensitive" } },
+            ];
             break;
           default:
             break;
@@ -64,40 +69,40 @@ const StudentListPage = async ({
       prisma.student.findMany({
         where: query,
         include: {
-          class: true, // This might be null for some students
+          class: true,
           parent: true,
           grade: true,
         },
         take: ITEM_PER_PAGE,
         skip: ITEM_PER_PAGE * (p - 1),
+        orderBy: { createdAt: "desc" },
       }),
       prisma.student.count({ where: query }),
     ]);
 
-    // Transform data to handle null relations
+    // Transform data to handle null values safely
     const safeData = data.map((student) => ({
       ...student,
+      bloodType: student.bloodType || "Not specified",
       class: student.class || null,
       parent: student.parent || null,
       grade: student.grade || null,
+      email: student.email || "No email",
+      phone: student.phone || "No phone",
+      address: student.address || "No address",
     }));
 
     return (
       <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
         {/* TOP */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-8">
           <h1 className="hidden md:block text-lg font-semibold">
             All Students
           </h1>
           <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
             <TableSearch />
             <div className="flex items-center gap-4 self-end">
-              <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-                <Image src="/filter.png" alt="" width={14} height={14} />
-              </button>
-              <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-                <Image src="/sort.png" alt="" width={14} height={14} />
-              </button>
+              <FilterSort />
               {role === "admin" && (
                 <FormContainerServer table="student" type="create" />
               )}
@@ -112,7 +117,7 @@ const StudentListPage = async ({
           searchPlaceholder="Search student..."
         />
         {/* PAGINATION */}
-        {/* <Pagination page={p} count={count} /> */}
+        <Pagination page={p} count={count} />
       </div>
     );
   } catch (error) {

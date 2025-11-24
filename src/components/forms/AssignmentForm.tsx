@@ -1,18 +1,30 @@
+// components/forms/AssignmentForm.tsx
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import InputField from "../InputField";
+import { useState } from "react";
 import {
   assignmentSchema,
   AssignmentSchema,
 } from "@/lib/formValidationSchemas";
 import { createAssignment, updateAssignment } from "@/lib/actions";
-import { Dispatch, SetStateAction } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Controller } from "react-hook-form";
 import { DateTimePicker } from "../DateTimePicker";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, FileText, Calendar, Clock } from "lucide-react";
 
 const AssignmentForm = ({
   type,
@@ -22,15 +34,15 @@ const AssignmentForm = ({
 }: {
   type: "create" | "update";
   data?: any;
-  setOpen: Dispatch<SetStateAction<boolean>>;
+  setOpen: (open: boolean) => void;
   relatedData?: { lessons: { id: string; name: string }[] };
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const {
     register,
     handleSubmit,
     formState: { errors },
     control,
-    setValue,
   } = useForm<AssignmentSchema>({
     resolver: zodResolver(assignmentSchema),
     defaultValues: {
@@ -47,6 +59,7 @@ const AssignmentForm = ({
   const router = useRouter();
 
   const onSubmit = handleSubmit(async (formData: AssignmentSchema) => {
+    setIsLoading(true);
     try {
       const commonPayload = {
         title: formData.title,
@@ -64,14 +77,13 @@ const AssignmentForm = ({
           toast.error("Missing assignment ID for update.");
           return;
         }
-
         response = await updateAssignment({
           ...commonPayload,
           id: formData.id,
         });
       }
 
-      if (response && response.success) {
+      if (response?.success) {
         toast.success(
           `Assignment ${
             type === "create" ? "created" : "updated"
@@ -84,123 +96,161 @@ const AssignmentForm = ({
       }
     } catch (error) {
       toast.error("An unexpected error occurred.");
-      console.error("Assignment form error:", error);
+    } finally {
+      setIsLoading(false);
     }
   });
 
   const { lessons = [] } = relatedData || {};
 
-  // Helper function to handle date changes safely
-  const handleDateChange = (
-    fieldName: "startDate" | "dueDate",
-    date: Date | undefined
-  ) => {
-    const safeDate = date || new Date();
-    setValue(fieldName, safeDate);
-  };
-
   return (
-    <form className="flex flex-col gap-8" onSubmit={onSubmit}>
-      <h1 className="text-xl font-semibold">
-        {type === "create"
-          ? "Create a new assignment"
-          : "Update the assignment"}
-      </h1>
-
-      <div className="flex justify-between flex-wrap gap-4">
-        {data && (
-          <InputField
-            label="Assignment ID (Hidden)"
-            name="id"
-            register={register}
-            error={errors?.id}
-            hidden
-          />
-        )}
-
-        <InputField
-          label="Assignment Title"
-          name="title"
-          register={register}
-          error={errors?.title}
-        />
-
-        {/* Start Date DateTimePicker */}
-        <Controller
-          control={control}
-          name="startDate"
-          render={({ field }) => (
-            <DateTimePicker
-              label="Start Date"
-              value={field.value}
-              onChange={(date) => {
-                field.onChange(date);
-                handleDateChange("startDate", date);
-              }}
-              error={errors.startDate?.message?.toString()}
-            />
-          )}
-        />
-
-        {/* Due Date DateTimePicker */}
-        <Controller
-          control={control}
-          name="dueDate"
-          render={({ field }) => (
-            <DateTimePicker
-              label="Due Date"
-              value={field.value}
-              onChange={(date) => {
-                field.onChange(date);
-                handleDateChange("dueDate", date);
-              }}
-              error={errors.dueDate?.message?.toString()}
-            />
-          )}
-        />
-
-        {/* Simple Lesson Select */}
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Lesson</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("lessonId")}
-            defaultValue={data?.lessonId?.toString() || ""}
-          >
-            <option value="" disabled>
-              Select a lesson
-            </option>
-            {lessons.map((lesson) => (
-              <option key={lesson.id} value={lesson.id}>
-                {lesson.name}
-              </option>
-            ))}
-          </select>
-          {errors.lessonId?.message && (
-            <p className="text-xs text-red-400">
-              {errors.lessonId.message.toString()}
-            </p>
-          )}
+    <Card className="border-0 shadow-lg">
+      <CardHeader className="bg-gradient-to-r from-green-50 to-green-100/50 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+            <FileText className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <CardTitle className="text-xl">
+              {type === "create" ? "Create Assignment" : "Update Assignment"}
+            </CardTitle>
+            <CardDescription>
+              {type === "create"
+                ? "Create a new assignment for students"
+                : "Modify assignment details"}
+            </CardDescription>
+          </div>
         </div>
-      </div>
+      </CardHeader>
 
-      <div className="bg-blue-50 p-4 rounded-md">
-        <h3 className="text-sm font-medium text-blue-800 mb-2">
-          Assignment Information
-        </h3>
-        <ul className="text-xs text-blue-700 space-y-1">
-          <li>
-            • Start Date: When the assignment becomes available to students
-          </li>
-          <li>• Due Date: When the assignment must be submitted</li>
-          <li>• Students will see this assignment in their dashboard</li>
-        </ul>
-      </div>
+      <CardContent className="pt-6">
+        <form onSubmit={onSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Assignment Title *</Label>
+              <Input
+                id="title"
+                placeholder="Enter assignment title..."
+                {...register("title")}
+                className={errors.title ? "border-red-500" : ""}
+              />
+              {errors.title && (
+                <p className="text-sm text-red-500">{errors.title.message}</p>
+              )}
+            </div>
 
-      <button className="bg-blue-400 hover:bg-blue-500 text-white p-2 rounded-md transition-colors">
-        {type === "create" ? "Create Assignment" : "Update Assignment"}
-      </button>
-    </form>
+            <div className="space-y-2">
+              <Label htmlFor="lessonId">Lesson *</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                {...register("lessonId")}
+                defaultValue={data?.lessonId?.toString() || ""}
+              >
+                <option value="" disabled>
+                  Select a lesson
+                </option>
+                {lessons.map((lesson) => (
+                  <option key={lesson.id} value={lesson.id}>
+                    {lesson.name}
+                  </option>
+                ))}
+              </select>
+              {errors.lessonId && (
+                <p className="text-sm text-red-500">
+                  {errors.lessonId.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Start Date *</Label>
+              <Controller
+                control={control}
+                name="startDate"
+                render={({ field }) => (
+                  <DateTimePicker
+                    label="start Date"
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.startDate?.message}
+                  />
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Due Date *</Label>
+              <Controller
+                control={control}
+                name="dueDate"
+                render={({ field }) => (
+                  <DateTimePicker
+                    label="due Date"
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.dueDate?.message}
+                  />
+                )}
+              />
+            </div>
+
+            {data?.id && <input type="hidden" {...register("id")} />}
+          </div>
+
+          <Card className="bg-green-50 border-green-200">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
+                  <Clock className="h-3 w-3 text-white" />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-green-800">
+                    Assignment Information
+                  </h4>
+                  <ul className="text-xs text-green-700 space-y-1">
+                    <li>
+                      • Start Date: When the assignment becomes available to
+                      students
+                    </li>
+                    <li>• Due Date: When the assignment must be submitted</li>
+                    <li>
+                      • Students will see this assignment in their dashboard
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 bg-green-600 hover:bg-green-700"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  {type === "create" ? "Creating..." : "Updating..."}
+                </>
+              ) : type === "create" ? (
+                "Create Assignment"
+              ) : (
+                "Update Assignment"
+              )}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

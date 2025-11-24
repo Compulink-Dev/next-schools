@@ -38,7 +38,11 @@ import {
   LogOut,
   type LucideIcon,
   BadgeDollarSignIcon,
+  ChevronRight,
+  Sparkles,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
 interface MenuItem {
   icon: LucideIcon;
@@ -46,6 +50,7 @@ interface MenuItem {
   href: string;
   visible: string[];
   exact?: boolean;
+  badge?: string;
 }
 
 interface MenuSection {
@@ -55,15 +60,28 @@ interface MenuSection {
 
 const menuSections: MenuSection[] = [
   {
-    title: "MENU",
+    title: "MAIN",
     items: [
       {
         icon: Home,
-        label: "Home",
+        label: "Dashboard",
         href: "/admin",
         visible: ["admin", "teacher", "student", "parent"],
         exact: true,
+        badge: "✨",
       },
+      {
+        icon: BarChart3,
+        label: "Analytics",
+        href: "/analytics",
+        visible: ["admin", "teacher"],
+        badge: "New",
+      },
+    ],
+  },
+  {
+    title: "ACADEMICS",
+    items: [
       {
         icon: UserCog,
         label: "Teachers",
@@ -90,15 +108,9 @@ const menuSections: MenuSection[] = [
       },
       {
         icon: School,
-        label: "Grades",
+        label: "Grades & Classes",
         href: "/list/grades",
         visible: ["admin"],
-      },
-      {
-        icon: School,
-        label: "Classes",
-        href: "/list/classes",
-        visible: ["admin", "teacher"],
       },
       {
         icon: BookText,
@@ -106,7 +118,11 @@ const menuSections: MenuSection[] = [
         href: "/list/lessons",
         visible: ["admin", "teacher"],
       },
-
+    ],
+  },
+  {
+    title: "ASSESSMENTS",
+    items: [
       {
         icon: ClipboardList,
         label: "Exams",
@@ -125,6 +141,11 @@ const menuSections: MenuSection[] = [
         href: "/list/results",
         visible: ["admin", "teacher", "student", "parent"],
       },
+    ],
+  },
+  {
+    title: "MANAGEMENT",
+    items: [
       {
         icon: CalendarCheck,
         label: "Attendance",
@@ -133,13 +154,13 @@ const menuSections: MenuSection[] = [
       },
       {
         icon: CalendarCheck,
-        label: "Events",
+        label: "Calendar",
         href: "/list/events",
         visible: ["admin", "teacher", "student", "parent"],
       },
       {
         icon: BadgeDollarSignIcon,
-        label: "Fees",
+        label: "Fee Management",
         href: "/list/fees",
         visible: ["admin", "teacher", "student", "parent"],
       },
@@ -148,38 +169,13 @@ const menuSections: MenuSection[] = [
         label: "Messages",
         href: "/list/messages",
         visible: ["admin", "teacher", "student", "parent"],
+        badge: "3",
       },
       {
         icon: Megaphone,
         label: "Announcements",
         href: "/list/announcements",
         visible: ["admin", "teacher", "student", "parent"],
-      },
-    ],
-  },
-  {
-    title: "OTHER",
-    items: [
-      {
-        icon: User,
-        label: "Profile",
-        href: "/profile",
-        visible: ["admin", "teacher", "student", "parent"],
-        exact: true,
-      },
-      {
-        icon: Settings,
-        label: "Settings",
-        href: "/settings",
-        visible: ["admin", "teacher", "student", "parent"],
-        exact: true,
-      },
-      {
-        icon: LogOut,
-        label: "Logout",
-        href: "/logout",
-        visible: ["admin", "teacher", "student", "parent"],
-        exact: true,
       },
     ],
   },
@@ -190,87 +186,207 @@ export function AppSidebar() {
   const { user } = useUser();
   const role = user?.publicMetadata?.role as string;
   const { state } = useSidebar();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b p-4">
-        <Link href="/admin" className="flex items-center gap-2 font-semibold">
-          <LMSLogo size={32} />
-          <span className={`${state === "expanded" ? "block" : "hidden"}`}>
-            LMS
-          </span>
+    <Sidebar
+      collapsible="icon"
+      className="border-r-0 bg-gradient-to-b from-background to-background/95 backdrop-blur-sm"
+    >
+      <SidebarHeader className="border-b p-6">
+        <Link
+          href="/admin"
+          className="flex items-center gap-3 font-semibold group"
+        >
+          <div className="relative">
+            <LMSLogo size={36} />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full border-2 border-background" />
+          </div>
+          <div
+            className={cn(
+              "flex flex-col transition-all duration-300",
+              state === "expanded" ? "opacity-100 w-auto" : "opacity-0 w-0"
+            )}
+          >
+            <span className="text-lg font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              LMS Platform
+            </span>
+            <span className="text-xs text-muted-foreground font-normal">
+              Education Management
+            </span>
+          </div>
         </Link>
       </SidebarHeader>
 
-      <SidebarContent>
-        {menuSections.map((section) => (
-          <SidebarGroup key={section.title}>
-            {state === "expanded" && (
-              <SidebarGroupLabel className="px-4 pt-4 pb-2 text-xs font-medium text-muted-foreground">
-                {section.title}
-              </SidebarGroupLabel>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {section.items.map((item) => {
-                  if (!item.visible.includes(role)) return null;
+      <SidebarContent className="px-3 py-4">
+        {menuSections.map((section) => {
+          const visibleItems = section.items.filter((item) =>
+            item.visible.includes(role)
+          );
 
-                  const isExactMatch = pathname === item.href;
-                  const isActive = item.exact
-                    ? isExactMatch
-                    : pathname.startsWith(item.href);
+          if (visibleItems.length === 0) return null;
 
-                  return (
-                    <SidebarMenuItem key={item.label}>
-                      <SidebarMenuButton asChild isActive={isActive}>
-                        <Link
-                          href={item.href}
-                          className="flex items-center gap-3"
+          return (
+            <SidebarGroup key={section.title} className="mb-6 last:mb-0">
+              {state === "expanded" && (
+                <SidebarGroupLabel className="px-3 pt-2 pb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {section.title}
+                </SidebarGroupLabel>
+              )}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {visibleItems.map((item) => {
+                    const isExactMatch = pathname === item.href;
+                    const isActive = item.exact
+                      ? isExactMatch
+                      : pathname.startsWith(item.href);
+
+                    return (
+                      <SidebarMenuItem key={item.label}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive}
+                          className={cn(
+                            "group relative transition-all duration-200 hover:translate-x-1",
+                            isActive
+                              ? "bg-gradient-to-r from-primary/10 to-primary/5 border-r-2 border-primary shadow-sm"
+                              : "hover:bg-accent/50"
+                          )}
                         >
-                          <item.icon
-                            size={20}
-                            className={
-                              isActive
-                                ? "text-primary"
-                                : "text-muted-foreground"
-                            }
-                          />
-                          <span
-                            className={`${
-                              state === "expanded" ? "block" : "hidden"
-                            }`}
+                          <Link
+                            href={item.href}
+                            className="flex items-center gap-3 py-3 px-3 rounded-lg"
                           >
-                            {item.label}
-                          </span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+                            <div
+                              className={cn(
+                                "relative transition-colors duration-200",
+                                isActive
+                                  ? "text-primary"
+                                  : "text-muted-foreground group-hover:text-foreground"
+                              )}
+                            >
+                              <item.icon size={20} />
+                              {isActive && (
+                                <div className="absolute -inset-1 bg-primary/10 rounded-full animate-pulse" />
+                              )}
+                            </div>
+
+                            <div
+                              className={cn(
+                                "flex items-center justify-between flex-1 transition-all duration-300",
+                                state === "expanded"
+                                  ? "opacity-100 w-auto"
+                                  : "opacity-0 w-0"
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  "font-medium transition-colors",
+                                  isActive ? "text-primary" : "text-foreground"
+                                )}
+                              >
+                                {item.label}
+                              </span>
+
+                              {item.badge && (
+                                <span
+                                  className={cn(
+                                    "px-1.5 py-0.5 text-xs rounded-full font-medium",
+                                    item.badge === "New"
+                                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                                      : item.badge === "✨"
+                                      ? "text-yellow-500"
+                                      : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                                  )}
+                                >
+                                  {item.badge}
+                                </span>
+                              )}
+                            </div>
+
+                            {state === "expanded" && (
+                              <ChevronRight
+                                size={16}
+                                className={cn(
+                                  "text-muted-foreground transition-transform duration-200",
+                                  isActive
+                                    ? "translate-x-0 opacity-100"
+                                    : "-translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"
+                                )}
+                              />
+                            )}
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex flex-col">
-            <span
-              className={`${
-                state === "expanded" ? "block" : "hidden"
-              } text-sm font-medium`}
-            >
+      <SidebarFooter className="border-t p-4 bg-gradient-to-t from-accent/30 to-transparent">
+        <div className="flex items-center gap-3 p-2">
+          <div className="relative">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground font-semibold text-sm">
+              {user?.firstName?.[0]}
+              {user?.lastName?.[0]}
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background" />
+          </div>
+
+          <div
+            className={cn(
+              "flex flex-col transition-all duration-300 overflow-hidden",
+              state === "expanded" ? "opacity-100 w-auto" : "opacity-0 w-0"
+            )}
+          >
+            <span className="text-sm font-semibold truncate">
               {user?.firstName} {user?.lastName}
             </span>
-            <span
-              className={`${
-                state === "expanded" ? "block" : "hidden"
-              } text-xs text-muted-foreground capitalize`}
-            >
+            <span className="text-xs text-muted-foreground capitalize flex items-center gap-1">
+              <Sparkles size={10} className="text-yellow-500" />
               {role}
             </span>
           </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div
+          className={cn(
+            "grid grid-cols-3 gap-2 mt-3 transition-all duration-300",
+            state === "expanded" ? "opacity-100 h-auto" : "opacity-0 h-0"
+          )}
+        >
+          <Link
+            href="/profile"
+            className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors"
+          >
+            <User size={16} className="text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Profile</span>
+          </Link>
+          <Link
+            href="/settings"
+            className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors"
+          >
+            <Settings size={16} className="text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Settings</span>
+          </Link>
+          <Link
+            href="/logout"
+            className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors"
+          >
+            <LogOut size={16} className="text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Logout</span>
+          </Link>
         </div>
       </SidebarFooter>
 

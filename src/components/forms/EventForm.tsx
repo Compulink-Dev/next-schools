@@ -1,14 +1,13 @@
+// components/forms/EventForm.tsx
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import InputField from "../InputField";
+import { useState } from "react";
 import { eventSchema, EventSchema } from "@/lib/formValidationSchemas";
 import { createEvent, updateEvent } from "@/lib/actions";
-import { useFormState } from "react-dom";
-import { Dispatch, SetStateAction, useEffect } from "react";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Controller } from "react-hook-form";
 import { DateTimePicker } from "../DateTimePicker";
 import {
@@ -20,6 +19,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Calendar, Clock, Users, MapPin } from "lucide-react";
 
 const EventForm = ({
   type,
@@ -29,15 +41,15 @@ const EventForm = ({
 }: {
   type: "create" | "update";
   data?: any;
-  setOpen: Dispatch<SetStateAction<boolean>>;
+  setOpen: (open: boolean) => void;
   relatedData?: { classes: { id: string; name: string }[] };
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const {
     register,
     handleSubmit,
     formState: { errors },
     control,
-    setValue,
   } = useForm<EventSchema>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
@@ -47,178 +59,212 @@ const EventForm = ({
       startTime: data?.startTime ? new Date(data.startTime) : new Date(),
       endTime: data?.endTime
         ? new Date(data.endTime)
-        : new Date(Date.now() + 2 * 60 * 60 * 1000), // Default 2 hours later
+        : new Date(Date.now() + 2 * 60 * 60 * 1000),
       classId: data?.classId || "",
     },
   });
 
-  const [state, formAction] = useFormState(
-    type === "create" ? createEvent : updateEvent,
-    {
-      success: false,
-      error: false,
-    }
-  );
-
-  const onSubmit = handleSubmit((formData) => {
-    formAction(formData);
-  });
-
   const router = useRouter();
 
-  useEffect(() => {
-    if (state.success) {
-      toast(`Event has been ${type === "create" ? "created" : "updated"}!`);
-      setOpen(false);
-      router.refresh();
+  const onSubmit = handleSubmit(async (formData) => {
+    setIsLoading(true);
+    try {
+      const result =
+        type === "create"
+          ? await createEvent(formData)
+          : await updateEvent(formData);
+
+      if (result.success) {
+        toast.success(
+          `Event ${type === "create" ? "created" : "updated"} successfully!`
+        );
+        setOpen(false);
+        router.refresh();
+      } else {
+        toast.error("Something went wrong!");
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred.");
+    } finally {
+      setIsLoading(false);
     }
-  }, [state, router, type, setOpen]);
-
-  console.log("state", state);
-
-  // Helper functions to handle date changes safely
-  const handleStartTimeChange = (date: Date | undefined) => {
-    const safeDate = date || new Date();
-    setValue("startTime", safeDate);
-
-    // If end time is before start time, adjust end time
-    const currentEndTime = new Date(safeDate.getTime() + 2 * 60 * 60 * 1000); // 2 hours later
-    setValue("endTime", currentEndTime);
-  };
-
-  const handleEndTimeChange = (date: Date | undefined) => {
-    const safeDate = date || new Date(Date.now() + 2 * 60 * 60 * 1000);
-    setValue("endTime", safeDate);
-  };
+  });
 
   return (
-    <form className="flex flex-col gap-8" onSubmit={onSubmit}>
-      <h1 className="text-xl font-semibold">
-        {type === "create" ? "Create Event" : "Update Event"}
-      </h1>
+    <Card className="border-0 shadow-lg">
+      <CardHeader className="bg-gradient-to-r from-pink-50 to-pink-100/50 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center">
+            <Calendar className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <CardTitle className="text-xl">
+              {type === "create" ? "Create Event" : "Update Event"}
+            </CardTitle>
+            <CardDescription>
+              {type === "create"
+                ? "Schedule a new event for students and staff"
+                : "Modify event details"}
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
 
-      <div className="flex justify-between flex-wrap gap-4">
-        {data && (
-          <InputField
-            label="Id"
-            name="id"
-            register={register}
-            error={errors?.id}
-            hidden
-          />
-        )}
+      <CardContent className="pt-6">
+        <form onSubmit={onSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Event Title *</Label>
+              <Input
+                id="title"
+                placeholder="Enter event title..."
+                {...register("title")}
+                className={errors.title ? "border-red-500" : ""}
+              />
+              {errors.title && (
+                <p className="text-sm text-red-500">{errors.title.message}</p>
+              )}
+            </div>
 
-        <InputField
-          label="Title"
-          name="title"
-          register={register}
-          error={errors?.title}
-        />
+            <div className="space-y-2">
+              <Label>Target Class</Label>
+              <Controller
+                control={control}
+                name="classId"
+                render={({ field }) => (
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || undefined}
+                  >
+                    <SelectTrigger>
+                      <Users className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Select class (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Classes</SelectLabel>
+                        {relatedData?.classes.map((cls) => (
+                          <SelectItem value={cls.id} key={cls.id}>
+                            {cls.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.classId && (
+                <p className="text-sm text-red-500">{errors.classId.message}</p>
+              )}
+            </div>
 
-        {/* Start Time DateTimePicker */}
-        <Controller
-          control={control}
-          name="startTime"
-          render={({ field }) => (
-            <DateTimePicker
-              label="Start Time"
-              value={field.value}
-              onChange={(date) => {
-                field.onChange(date);
-                handleStartTimeChange(date);
-              }}
-              error={errors.startTime?.message?.toString()}
+            <div className="space-y-2">
+              <Label>Start Time *</Label>
+              <Controller
+                control={control}
+                name="startTime"
+                render={({ field }) => (
+                  <DateTimePicker
+                    label="Start Time"
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.startTime?.message}
+                  />
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>End Time *</Label>
+              <Controller
+                control={control}
+                name="endTime"
+                render={({ field }) => (
+                  <DateTimePicker
+                    label="End Time"
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.endTime?.message}
+                  />
+                )}
+              />
+            </div>
+
+            {data?.id && <input type="hidden" {...register("id")} />}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Event Description *</Label>
+            <Textarea
+              id="description"
+              placeholder="Enter event details, location, and other important information..."
+              className={`min-h-[120px] ${
+                errors.description ? "border-red-500" : ""
+              }`}
+              {...register("description")}
             />
-          )}
-        />
-
-        {/* End Time DateTimePicker */}
-        <Controller
-          control={control}
-          name="endTime"
-          render={({ field }) => (
-            <DateTimePicker
-              label="End Time"
-              value={field.value}
-              onChange={(date) => {
-                field.onChange(date);
-                handleEndTimeChange(date);
-              }}
-              error={errors.endTime?.message?.toString()}
-            />
-          )}
-        />
-
-        {/* Class Select */}
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Class</label>
-          <Controller
-            control={control}
-            name="classId"
-            render={({ field }) => (
-              <Select
-                onValueChange={field.onChange}
-                value={field.value || undefined}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select class" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Classes</SelectLabel>
-                    {relatedData?.classes.map((cls) => (
-                      <SelectItem value={cls.id} key={cls.id}>
-                        {cls.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+            {errors.description && (
+              <p className="text-sm text-red-500">
+                {errors.description.message}
+              </p>
             )}
-          />
-          {errors.classId?.message && (
-            <p className="text-xs text-red-400">
-              {errors.classId.message.toString()}
-            </p>
-          )}
-        </div>
+          </div>
 
-        {/* Description */}
-        <div className="flex flex-col gap-2 w-full">
-          <label className="text-xs text-gray-500">Description</label>
-          <textarea
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full min-h-[100px]"
-            {...register("description")}
-            defaultValue={data?.description}
-            placeholder="Enter event details..."
-          />
-          {errors.description?.message && (
-            <p className="text-xs text-red-400">
-              {errors.description.message.toString()}
-            </p>
-          )}
-        </div>
-      </div>
+          <Card className="bg-pink-50 border-pink-200">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
+                  <MapPin className="h-3 w-3 text-white" />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-pink-800">
+                    Event Information
+                  </h4>
+                  <ul className="text-xs text-pink-700 space-y-1">
+                    <li>
+                      • Events can be assigned to specific classes or all
+                      classes
+                    </li>
+                    <li>• Start and end times define the event duration</li>
+                    <li>• Events will appear in the calendar view</li>
+                    <li>
+                      • Use clear descriptions to explain the event purpose
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-      <div className="bg-blue-50 p-4 rounded-md">
-        <h3 className="text-sm font-medium text-blue-800 mb-2">
-          Event Information
-        </h3>
-        <ul className="text-xs text-blue-700 space-y-1">
-          <li>• Events can be assigned to specific classes or all classes</li>
-          <li>• Start and end times define the event duration</li>
-          <li>• Events will appear in the calendar view</li>
-          <li>• Use clear descriptions to explain the event purpose</li>
-        </ul>
-      </div>
-
-      {state.error && (
-        <span className="text-red-500">Something went wrong!</span>
-      )}
-      <button className="bg-blue-400 hover:bg-blue-500 text-white p-2 rounded-md w-full mt-4 transition-colors">
-        {type === "create" ? "Create Event" : "Update Event"}
-      </button>
-    </form>
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 bg-pink-600 hover:bg-pink-700"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  {type === "create" ? "Creating..." : "Updating..."}
+                </>
+              ) : type === "create" ? (
+                "Create Event"
+              ) : (
+                "Update Event"
+              )}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

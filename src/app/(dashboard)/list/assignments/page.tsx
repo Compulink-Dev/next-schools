@@ -17,6 +17,7 @@ import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
 import { DataTable } from "@/components/DataTable";
 import { columns } from "./columns";
+import FilterSort from "@/components/FilterSort";
 
 type AssignmentList = Assignment & {
   lesson: {
@@ -116,15 +117,10 @@ const AssignmentListPage = async ({
           <h1 className="text-base md:text-lg font-semibold whitespace-nowrap">
             All Assignments
           </h1>
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end mt-8">
             <TableSearch />
             <div className="flex items-center gap-2">
-              <button className="w-7 h-7 flex items-center justify-center rounded-full bg-lamaYellow">
-                <Image src="/filter.png" alt="Filter" width={12} height={12} />
-              </button>
-              <button className="w-7 h-7 flex items-center justify-center rounded-full bg-lamaYellow">
-                <Image src="/sort.png" alt="Sort" width={12} height={12} />
-              </button>
+              <FilterSort />
               {(role === "admin" || role === "teacher") && (
                 <FormContainer table="assignment" type="create" />
               )}

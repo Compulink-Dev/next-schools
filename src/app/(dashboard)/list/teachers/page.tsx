@@ -13,6 +13,7 @@ import { auth } from "@clerk/nextjs/server";
 import { columns, TeacherWithRelations } from "./columns";
 import { DataTable } from "@/components/DataTable";
 import FormContainerServer from "@/components/FormContainerServer";
+import FilterSort from "@/components/FilterSort";
 
 const TeacherListPage = async ({
   searchParams,
@@ -111,22 +112,19 @@ const TeacherListPage = async ({
     return (
       <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
         {/* TOP */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-8">
           <h1 className="hidden md:block text-lg font-semibold">
             All Teachers
           </h1>
           <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-            <TableSearch />
             <div className="flex items-center gap-4 self-end">
-              <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-                <Filter size={14} />
-              </button>
-              <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-                <SortDesc size={14} />
-              </button>
-              {role === "admin" && (
-                <FormContainerServer table="teacher" type="create" />
-              )}
+              <TableSearch />
+              <FilterSort />
+              <div className="">
+                {role === "admin" && (
+                  <FormContainerServer table="teacher" type="create" />
+                )}
+              </div>
             </div>
           </div>
         </div>

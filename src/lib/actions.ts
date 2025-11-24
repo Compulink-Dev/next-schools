@@ -15,11 +15,24 @@ import {
   type EventSchema, 
   type AnnouncementSchema,// Import EventSchema
   type MessageSchema,
+  type MessageSchema,
   type ParentSchema,
-
+  messageSchema, // Add this line
+  subjectSchema,
+  classSchema,
+  teacherSchema,
+  studentSchema,
+  examSchema,
+  assignmentSchema,
+  resultSchema,
+  lessonSchema,
+  attendanceSchema,
+  eventSchema,
+  announcementSchema,
+  parentSchema,
 } from "./formValidationSchemas";
 import prisma from "./prisma";
-import { clerkClient } from "@clerk/nextjs/server";
+import { clerkClient,auth } from "@clerk/nextjs/server";
 import { Day } from "@prisma/client"; // Import the Day enum
 import { gradeSchema, GradeSchema } from "../../lib/formValidationSchemas";
 
@@ -121,7 +134,7 @@ export const deleteSubject = async (data: { id: string }) => {
 
 // In lib/actions.ts
 export const createClass = async (
-  _currentState: CurrentState,
+  // _currentState: CurrentState,
   data: ClassSchema
 ) => {
   try {
@@ -143,7 +156,7 @@ export const createClass = async (
 };
 
 export const updateClass = async (
-  _currentState: CurrentState,
+  // _currentState: CurrentState,
   data: ClassSchema
 ) => {
   try {
@@ -169,7 +182,7 @@ export const updateClass = async (
 
 // Delete Class
 export const deleteClass = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: FormData
 ) => {
   const id = data.get("id") as string;
@@ -191,7 +204,7 @@ await prisma.class.delete({
 // Create Teacher
 // lib/actions.ts
 export const createTeacher = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: TeacherSchema
 ) => {
   try {
@@ -266,7 +279,7 @@ export const createTeacher = async (
 
 // Update Teacher
 export const updateTeacher = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: TeacherSchema
 ) => {
   if (!data.id) {
@@ -332,7 +345,7 @@ export const updateTeacher = async (
 
 // Delete Teacher
 export const deleteTeacher = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: FormData
 ) => {
   const id = data.get("id") as string;
@@ -355,7 +368,7 @@ export const deleteTeacher = async (
 
 // Create Student
 export const createStudent = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: StudentSchema
 ) => {
   console.log(data);
@@ -407,7 +420,7 @@ export const createStudent = async (
 
 // Update Student
 export const updateStudent = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: StudentSchema
 ) => {
   if (!data.id) {
@@ -453,7 +466,7 @@ export const updateStudent = async (
 
 // Delete Student
 export const deleteStudent = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: FormData
 ) => {
   const id = data.get("id") as string;
@@ -639,7 +652,7 @@ await prisma.assignment.delete({
 
 // Delete Event
 export const deleteEvent = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: FormData
 ) => {
   const id = data.get("id") as string;
@@ -660,7 +673,7 @@ await prisma.event.delete({
 
 // Delete Announcement
 export const deleteAnnouncement = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: FormData
 ) => {
   const id = data.get("id") as string;
@@ -681,7 +694,7 @@ await prisma.announcement.delete({
 
 // Update Result
 export const updateResult = async (
-  _currentState: CurrentState, // not used, but required by useFormState
+  // _currentState: CurrentState, // not used, but required by useFormState
   data: ResultSchema
 ): Promise<{ success: boolean; error: boolean }> => {
   try {
@@ -713,7 +726,7 @@ export const updateResult = async (
 
 // Delete Result (if needed)
 export const deleteResult = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: FormData
 ) => {
   const id = data.get("id") as string;
@@ -734,7 +747,7 @@ await prisma.result.delete({
 };
 // Create Lesson
 export const createLesson = async (
-  _currentState: CurrentState,
+  // _currentState: CurrentState,
   data: LessonSchema
 ) => {
   try {
@@ -760,7 +773,7 @@ export const createLesson = async (
 
 // Update Lesson
 export const updateLesson = async (
-  _currentState: CurrentState,
+  // _currentState: CurrentState,
   data: LessonSchema
 ): Promise<{ success: boolean; error: boolean }> => { 
   try {
@@ -789,7 +802,7 @@ export const updateLesson = async (
 
 // Delete Lesson
 export const deleteLesson = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: FormData
 ) => {
   const id = data.get("id") as string;
@@ -810,7 +823,7 @@ await prisma.lesson.delete({
 
 // Create Attendance
 export const createAttendance = async (
-  currentState: CurrentState, // If not used, consider removing this parameter
+  // currentState: CurrentState, // If not used, consider removing this parameter
   data: AttendanceSchema
 ): Promise<{ success: boolean; error: boolean }> => { // Specify return type
   try {
@@ -833,7 +846,7 @@ export const createAttendance = async (
 
 // Update Attendance
 export const updateAttendance = async (
-  currentState: CurrentState, // If not used, consider removing
+  // currentState: CurrentState, // If not used, consider removing
   data: AttendanceSchema
 ): Promise<{ success: boolean; error: boolean }> => { // Specify return type
   try {
@@ -856,7 +869,7 @@ export const updateAttendance = async (
 
 // Delete Attendance
 export const deleteAttendance = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: FormData
 ) => {
   const id = data.get("id") as string;
@@ -877,7 +890,7 @@ await prisma.attendance.delete({
 
 // Create Event
 export const createEvent = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: EventSchema
 ) => {
   try {
@@ -901,7 +914,7 @@ export const createEvent = async (
 
 // Update Event
 export const updateEvent = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: EventSchema
 ) => {
   try {
@@ -927,11 +940,7 @@ export const updateEvent = async (
   }
 };
 
-// Create Announcement
-export const createAnnouncement = async (
-  currentState: CurrentState,
-  data: AnnouncementSchema
-) => {
+export const createAnnouncement = async (data: AnnouncementSchema) => {
   try {
     await prisma.announcement.create({
       data: {
@@ -950,16 +959,11 @@ export const createAnnouncement = async (
   }
 };
 
-// Update Announcement
-export const updateAnnouncement = async (
-  currentState: CurrentState,
-  data: AnnouncementSchema
-) => {
+// Similarly, update your updateAnnouncement function
+export const updateAnnouncement = async (data: AnnouncementSchema) => {
   try {
     await prisma.announcement.update({
-      where: {
-        id: data.id,
-      },
+      where: { id: data.id },
       data: {
         title: data.title,
         description: data.description,
@@ -975,84 +979,251 @@ export const updateAnnouncement = async (
     return { success: false, error: true };
   }
 };
+
+// Create message action with enhanced error handling and logging
+
 // Create Message
 export const createMessage = async (
-  currentState: CurrentState,
-  data: MessageSchema
-) => {
+  data: messageSchema
+): Promise<{ success: boolean; error?: string }> => {
   try {
-    await prisma.message.create({
+    console.log("🔍 createMessage called with data:", data);
+    
+    // Get authentication - with error handling
+    let userId: string | null = null;
+    try {
+      const authResult = auth();
+      userId = authResult.userId;
+      console.log("🔍 Authenticated user ID:", userId);
+    } catch (authError) {
+      console.error("❌ Auth error:", authError);
+      return { success: false, error: "Authentication service unavailable" };
+    }
+
+    if (!userId) {
+      console.error("❌ Unauthorized: No user ID");
+      return { success: false, error: "Unauthorized - Please log in again" };
+    }
+
+    // Validate the incoming data
+    const validatedData = messageSchema.parse(data);
+    console.log("✅ Data validated successfully");
+
+    // Verify sender matches authenticated user
+    if (validatedData.senderId !== userId) {
+      console.error("❌ Sender ID mismatch:", {
+        senderId: validatedData.senderId,
+        authenticatedUserId: userId
+      });
+      return { success: false, error: "Sender ID does not match authenticated user" };
+    }
+
+    // Verify receiver exists based on receiver type
+    console.log("🔍 Verifying receiver exists...");
+    let receiverExists = false;
+    
+    if (validatedData.receiverType === "TEACHER") {
+      const teacher = await prisma.teacher.findUnique({
+        where: { clerkId: validatedData.receiverId },
+      });
+      receiverExists = !!teacher;
+      console.log("👨‍🏫 Teacher receiver found:", teacher);
+    } else if (validatedData.receiverType === "STUDENT") {
+      const student = await prisma.student.findUnique({
+        where: { clerkId: validatedData.receiverId },
+      });
+      receiverExists = !!student;
+      console.log("👨‍🎓 Student receiver found:", student);
+    } else if (validatedData.receiverType === "PARENT") {
+      const parent = await prisma.parent.findUnique({
+        where: { clerkId: validatedData.receiverId },
+      });
+      receiverExists = !!parent;
+      console.log("👨‍👩‍👧‍👦 Parent receiver found:", parent);
+    } else if (validatedData.receiverType === "ADMIN") {
+      // For admin, check if user exists with admin role
+      const adminUser = await prisma.user.findFirst({
+        where: { 
+          clerkId: validatedData.receiverId,
+          role: "ADMIN"
+        },
+      });
+      receiverExists = !!adminUser;
+      console.log("👨‍💼 Admin receiver found:", adminUser);
+    }
+
+    if (!receiverExists) {
+      console.error("❌ Receiver not found:", {
+        receiverId: validatedData.receiverId,
+        receiverType: validatedData.receiverType
+      });
+      return { success: false, error: "Receiver not found" };
+    }
+
+    // Create the message
+    console.log("📝 Creating message in database...");
+    const message = await prisma.message.create({
       data: {
-        title: data.title,
-        content: data.content,
-        senderId: data.senderId,
-        senderType: data.senderType,
-        receiverId: data.receiverId,
-        receiverType: data.receiverType,
+        title: validatedData.title,
+        content: validatedData.content,
+        senderId: validatedData.senderId,
+        senderType: validatedData.senderType,
+        receiverId: validatedData.receiverId,
+        receiverType: validatedData.receiverType,
+        isRead: false,
       },
     });
 
+    console.log("✅ Message created successfully:", message.id);
+
+    // Revalidate relevant paths
     revalidatePath("/list/messages");
-    return { success: true, error: false };
+    revalidatePath("/dashboard");
+    revalidatePath("/api/messages");
+
+    return { success: true };
   } catch (err) {
-    console.error("Error creating message:", err);
-    return { success: false, error: true };
+    console.error("❌ Error creating message:", err);
+    
+    if (err instanceof Error) {
+      return { success: false, error: err.message };
+    }
+    
+    return { success: false, error: "Failed to create message due to database error" };
   }
 };
 
 // Update Message
 export const updateMessage = async (
-  currentState: CurrentState,
-  data: MessageSchema
-) => {
+  data: messageSchema
+): Promise<{ success: boolean; error?: string }> => {
   try {
+    let userId: string | null = null;
+    try {
+      const authResult = auth();
+      userId = authResult.userId;
+    } catch (authError) {
+      console.error("❌ Auth error:", authError);
+      return { success: false, error: "Authentication service unavailable" };
+    }
+    
+    console.log("🔍 updateMessage called with data:", data);
+
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    if (!data.id) {
+      return { success: false, error: "Message ID is required for update" };
+    }
+
+    // Validate the data
+    const validatedData = messageSchema.parse(data);
+
+    // Check if message exists and user has permission
+    const existingMessage = await prisma.message.findUnique({
+      where: { id: validatedData.id },
+    });
+
+    if (!existingMessage) {
+      return { success: false, error: "Message not found" };
+    }
+
+    // Only allow sender to update their own messages
+    if (existingMessage.senderId !== userId) {
+      return { success: false, error: "You can only update your own messages" };
+    }
+
+    // Update the message
     await prisma.message.update({
-      where: {
-        id: data.id,
-      },
+      where: { id: validatedData.id },
       data: {
-        title: data.title,
-        content: data.content,
-        senderId: data.senderId,
-        senderType: data.senderType,
-        receiverId: data.receiverId,
-        receiverType: data.receiverType,
+        title: validatedData.title,
+        content: validatedData.content,
       },
     });
 
+    console.log("✅ Message updated successfully:", validatedData.id);
+
     revalidatePath("/list/messages");
-    
-    return { success: true, error: false };
+    revalidatePath("/dashboard");
+
+    return { success: true };
   } catch (err) {
-    console.error("Error updating message:", err);
-    return { success: false, error: true };
+    console.error("❌ Error updating message:", err);
+    
+    if (err instanceof Error) {
+      return { success: false, error: err.message };
+    }
+    
+    return { success: false, error: "Failed to update message" };
   }
 };
 
 // Delete Message
 export const deleteMessage = async (
-  currentState: CurrentState,
   data: FormData
-) => {
-  const id = data.get("id") as string;
+): Promise<{ success: boolean; error?: string }> => {
   try {
-await prisma.message.delete({
-      where: {
-        id: id,
-      },
+    let userId: string | null = null;
+    try {
+      const authResult = auth();
+      userId = authResult.userId;
+    } catch (authError) {
+      console.error("❌ Auth error:", authError);
+      return { success: false, error: "Authentication service unavailable" };
+    }
+    
+    if (!userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const id = data.get("id") as string;
+    
+    if (!id) {
+      return { success: false, error: "Message ID is required" };
+    }
+
+    console.log("🔍 deleteMessage called for ID:", id);
+
+    // Check if message exists and user has permission
+    const existingMessage = await prisma.message.findUnique({
+      where: { id },
     });
 
+    if (!existingMessage) {
+      return { success: false, error: "Message not found" };
+    }
+
+    // Only allow sender to delete their own messages
+    if (existingMessage.senderId !== userId) {
+      return { success: false, error: "You can only delete your own messages" };
+    }
+
+    await prisma.message.delete({
+      where: { id },
+    });
+
+    console.log("✅ Message deleted successfully:", id);
+
     revalidatePath("/list/messages");
-    return { success: true, error: false };
+    revalidatePath("/dashboard");
+
+    return { success: true };
   } catch (err) {
-    console.error("Error deleting message:", err);
-    return { success: false, error: true };
+    console.error("❌ Error deleting message:", err);
+    
+    if (err instanceof Error) {
+      return { success: false, error: err.message };
+    }
+    
+    return { success: false, error: "Failed to delete message" };
   }
 };
 
 // Create Parent
 export const createParent = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: ParentSchema
 ) => {
   try {
@@ -1076,6 +1247,7 @@ export const createParent = async (
         email: data.email || null,
         phone: data.phone,
         address: data.address,
+        bloodType: data.bloodType,
       },
     });
 
@@ -1089,7 +1261,7 @@ export const createParent = async (
 
 // Update Parent
 export const updateParent = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: ParentSchema
 ) => {
   if (!data.id) {
@@ -1109,7 +1281,7 @@ export const updateParent = async (
     // 2. Update the parent record in the database
     await prisma.parent.update({
       where: {
-        clerkId: data.id, 
+        clerkId: data.id,
       },
       data: {
         username: data.username,
@@ -1118,6 +1290,7 @@ export const updateParent = async (
         email: data.email || null,
         phone: data.phone,
         address: data.address,
+        bloodType: data.bloodType,
       },
     });
 
@@ -1131,7 +1304,7 @@ export const updateParent = async (
 
 // Delete Parent
 export const deleteParent = async (
-  currentState: CurrentState,
+  // currentState: CurrentState,
   data: FormData
 ) => {
   const id = data.get("id") as string;
@@ -1166,7 +1339,7 @@ export type FeeSchema = {
   status?: "PENDING" | "PAID" | "PARTIAL";
 };
 
-export const createFee = async (_: any, data: FeeSchema) => {
+export const createFee = async ( data: FeeSchema) => {
   try {
     await prisma.fee.create({
       data: {
@@ -1186,7 +1359,7 @@ export const createFee = async (_: any, data: FeeSchema) => {
   }
 };
 
-export const updateFee = async (_: any, data: FeeSchema) => {
+export const updateFee = async ( data: FeeSchema) => {
   try {
     if (!data.id) return { success: false, error: true };
     await prisma.fee.update({
